@@ -44,7 +44,7 @@ class Track():
             else:
                 return 'd'
 
-        neighbourhood = []
+        neighbourhood = [self.key]
 
         if str.isdigit(self.key[1]):
             key_int = int(self.key[0] + self.key[1])
@@ -101,9 +101,8 @@ class Library():
         self.keys.add(track.key)
         self.neighbours[track.filename] = set()
         
-        neighbourhood = track.neighbours()
         for filename, other in self.tracks.items():
-            if other.key in neighbourhood:
+            if other.is_neighbour(track) and other.filename != track.filename:
                 self.neighbours[track.filename].add(other)
                 self.neighbours[other.filename].add(track)
 
@@ -115,12 +114,23 @@ class Library():
             if track in neighbours:
                 neighbours.remove(track)
 
+    def create_playlist(self, name, first, max):
+        playlist = Playlist(name)
+
+        i = 0
+        while i < max and i < self.count():
+            for filename, current in self.tracks.items():
+                for track in self.neighbours[filename]:
+                    playlist.add(track)
+                    i = i + 1
+
+        return playlist
+
     def count(self):
         return len(self.tracks)
 
 if __name__ == '__main__':
     meta = Library()
-    playlist = Playlist('zbeul')
 
     for filename in sys.argv[1:]:
         fileinfo = filetype.guess(filename)
@@ -131,16 +141,17 @@ if __name__ == '__main__':
                 track.analyse_track()
                 track.get_meta()
                 meta.add(track)
-                playlist.add(track)
-
-    playlist.to_file()
 
     for key, item in meta.tracks.items():
         print(key)
-        print(item.filename)
-        print(item.meta)
         print(item.key)
         print(item.bpm)
         print(item.neighbours())
         for track in meta.neighbours[item.filename]:
-            print(track.filename)
+            print('--> ' + track.filename)
+        print('\n')
+        last = item
+
+    playlist = meta.create_playlist('coucou', last, 2)
+    print(playlist.name)
+    playlist.to_file()
