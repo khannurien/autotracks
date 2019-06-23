@@ -2,10 +2,10 @@
 # coding: utf-8
 
 import os
+import random
 import sys
 
 import filetype
-from filetype.types.audio import Flac
 
 class Track():
     def __init__(self, filename):
@@ -31,6 +31,7 @@ class Track():
         if not self.meta:
             self.analyse_audio()
 
+        # the .meta file contains two lines -- first is key, second is bpm
         with open(self.meta) as meta:
             self.key = meta.readline().rstrip()
             self.bpm = meta.readline().rstrip()
@@ -98,7 +99,7 @@ class Playlist():
         """
         with open(self.name + '.m3u', mode='w') as playlist:
             for track in self.tracks:
-                playlist.write(track.filename + '\n')
+                playlist.write(track.filename + ' # ' + track.key + '\n')
 
 class Library():
     def __init__(self):
@@ -106,7 +107,7 @@ class Library():
         self.keys = set()
         self.neighbours = {}
 
-    def check_file(self, filename):
+    def _check_file(self, filename):
         """Ensure a file's MIME type is audio/*.
         
         Arguments:
@@ -123,11 +124,11 @@ class Library():
 
         return False
 
-    def add(self, track):
+    def _add(self, track):
         """Add a Track to the library and update library's neighbourhood.
         
         Arguments:
-            track {[type]} -- [description]
+            track {Track} -- A Track object.
         """
 
         self.tracks[track.filename] = track
@@ -139,17 +140,29 @@ class Library():
                 self.neighbours[track.filename].add(other)
                 self.neighbours[other.filename].add(track)
 
-    def add_list(self, filenames):
+    def _get_neighbours(self, track):
+        """Get the neighbours of a track.
+        
+        Arguments:
+            track {Track} -- A Track object.
+        
+        Returns:
+            List[Track] -- A list of Tracks in the neighbourhood.
+        """
+        
+        return self.neighbours[track.filename]
+
+    def add(self, filenames):
         """Analyse a list of files and add Tracks to the library.
         
         Arguments:
             tracks {[type]} -- [description]
         """
         for filename in filenames:
-            if self.check_file(filename):
+            if self._check_file(filename):
                 track = Track(filename)
                 track.set_meta()
-                self.add(track)
+                self._add(track)
 
     def remove(self, track):
         """Remove a Track from the library and update library's neighbourhood.
@@ -164,15 +177,45 @@ class Library():
             if track in neighbours:
                 neighbours.remove(track)
 
-    def create_playlist(self, name, first, max):
+    def discover_paths(self, path, track, paths):
+        path.append(track)
+        neighbours = self._get_neighbours(track)
+
+        for next in neighbours:
+            # check if that next track is compatible with the latest added to our path
+            #if next not in used and next.is_neighbour(path[-1]):
+            if next not in path:
+                if next.is_neighbour(path[-1]):
+                    print("neighbour = " + next.filename)
+                    path.append(next)
+                    # recursively check in the next track's neighbourhood
+                    self.discover_paths(path, next, paths)
+                    paths.append(path)
+                """
+                else:
+                    new_path = path.copy()
+                    del(new_path[-1])
+                    self.discover_paths(new_path, next, paths)
+                """
+
+        return paths
+
+    def create_playlist(self, name, first):
         playlist = Playlist(name)
 
+        paths = []
+        
         i = 0
-        while i < max and i < self.count():
-            for filename, current in self.tracks.items():
-                for track in self.neighbours[filename]:
-                    playlist.add(track)
-                    i = i + 1
+        self.discover_paths([], first, paths)
+
+        if len(paths) > 0:
+            longest = len(paths[0])
+            for path in paths:
+                if longest <= len(path):
+                    print(paths.index(path))
+                    for track in path:
+                        playlist.add(track)
+                        print(track.filename + " key: " + track.key)
 
         return playlist
 
@@ -181,7 +224,7 @@ class Library():
 
 if __name__ == '__main__':
     meta = Library()
-    meta.add_list(sys.argv[1:])
+    meta.add(sys.argv[1:])
 
     for key, item in meta.tracks.items():
         print(key)
@@ -191,8 +234,10 @@ if __name__ == '__main__':
         for track in meta.neighbours[item.filename]:
             print('--> ' + track.filename)
         print('\n')
-        last = item
 
-    playlist = meta.create_playlist('coucou', last, 2)
+    random_filename, random_track = random.choice(list(meta.tracks.items()))
+    print("start with: " + random_filename)
+
+    playlist = meta.create_playlist('coucou', random_track)
     print(playlist.name)
     playlist.to_file()
