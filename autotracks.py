@@ -16,7 +16,7 @@ class Track():
         else:
             self.meta = None
 
-    def analyse_track(self):
+    def analyse_audio(self):
         """Start track analysis with bpm-tools and keyfinder-cli.
         """
 
@@ -24,12 +24,12 @@ class Track():
             os.system('./extract.sh "' + self.filename + '"')
             self.meta = self.filename + '.meta'
 
-    def get_meta(self):
+    def set_meta(self):
         """Parse metadata file and save values locally.
         """
 
         if not self.meta:
-            self.analyse_track()
+            self.analyse_audio()
 
         with open(self.meta) as meta:
             self.key = meta.readline().rstrip()
@@ -38,14 +38,11 @@ class Track():
     def neighbours(self):
         """Get the list of compatible keys in neighbourhood.
         """
-        def opposite(char):
-            if char == 'd':
-                return 'm'
-            else:
-                return 'd'
-
+        
+        # own key is always a valid neighbour
         neighbourhood = [self.key]
 
+        # find key signature (1-12) and scale (m is Minor, d is Major)
         if str.isdigit(self.key[1]):
             key_int = int(self.key[0] + self.key[1])
             key_char = self.key[2]
@@ -53,10 +50,11 @@ class Track():
             key_int = int(self.key[0])
             key_char = self.key[1]
 
+        # cycle through the wheel (cf. any Harmonic Mixing Wheel)
         if key_int == 12:
             neighbourhood.append(str(key_int - 1) + key_char)
             neighbourhood.append('1' + key_char)
-            
+
         elif key_int == 1:
             neighbourhood.append('12' + key_char)
             neighbourhood.append(str(key_int + 1) + key_char)
@@ -65,7 +63,7 @@ class Track():
             neighbourhood.append(str(key_int - 1) + key_char)
             neighbourhood.append(str(key_int + 1) + key_char)
 
-        neighbourhood.append(str(key_int) + opposite(key_char))
+        neighbourhood.append(str(key_int) + ('d' if key_char is 'm' else 'm'))
 
         return neighbourhood
 
@@ -78,14 +76,26 @@ class Playlist():
         self.tracks = []
 
     def add(self, track):
+        """Add a Track to the playlist.
+        
+        Arguments:
+            track {Track} -- A Track object.
+        """
         if track not in self.tracks:
             self.tracks.append(track)
 
     def remove(self, track):
+        """Remove a Track from the playlist.
+        
+        Arguments:
+            track {Track} -- A Track object.
+        """
         if track in self.tracks:
             self.tracks.remove(track)
 
     def to_file(self):
+        """Save the playlist to an m3u file.
+        """
         with open(self.name + '.m3u', mode='w') as playlist:
             for track in self.tracks:
                 playlist.write(track.filename + '\n')
@@ -96,7 +106,30 @@ class Library():
         self.keys = set()
         self.neighbours = {}
 
+    def check_file(self, filename):
+        """Ensure a file's MIME type is audio/*.
+        
+        Arguments:
+            filename {str} -- The path to a file.
+        
+        Returns:
+            boolean -- True if the file is of audio type, else False.
+        """
+        fileinfo = filetype.guess(filename)
+
+        if fileinfo:
+            if 'audio' in fileinfo.mime:
+                return True
+
+        return False
+
     def add(self, track):
+        """Add a Track to the library and update library's neighbourhood.
+        
+        Arguments:
+            track {[type]} -- [description]
+        """
+
         self.tracks[track.filename] = track
         self.keys.add(track.key)
         self.neighbours[track.filename] = set()
@@ -106,7 +139,24 @@ class Library():
                 self.neighbours[track.filename].add(other)
                 self.neighbours[other.filename].add(track)
 
+    def add_list(self, filenames):
+        """Analyse a list of files and add Tracks to the library.
+        
+        Arguments:
+            tracks {[type]} -- [description]
+        """
+        for filename in filenames:
+            if self.check_file(filename):
+                track = Track(filename)
+                track.set_meta()
+                self.add(track)
+
     def remove(self, track):
+        """Remove a Track from the library and update library's neighbourhood.
+        
+        Arguments:
+            track {Track} -- A Track object.
+        """
         self.tracks.pop(track.filename)
         self.neighbours.pop(track.filename)
 
@@ -131,16 +181,7 @@ class Library():
 
 if __name__ == '__main__':
     meta = Library()
-
-    for filename in sys.argv[1:]:
-        fileinfo = filetype.guess(filename)
-
-        if fileinfo:
-            if 'audio' in fileinfo.mime:
-                track = Track(filename)
-                track.analyse_track()
-                track.get_meta()
-                meta.add(track)
+    meta.add_list(sys.argv[1:])
 
     for key, item in meta.tracks.items():
         print(key)
