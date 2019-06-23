@@ -72,6 +72,24 @@ class Track():
     def is_neighbour(self, other):
         return self.key in other.neighbours()
 
+class Playlist():
+    def __init__(self, name):
+        self.name = name
+        self.tracks = []
+
+    def add(self, track):
+        if track not in self.tracks:
+            self.tracks.append(track)
+
+    def remove(self, track):
+        if track in self.tracks:
+            self.tracks.remove(track)
+
+    def to_file(self):
+        with open(self.name + '.m3u', mode='w') as playlist:
+            for track in self.tracks:
+                playlist.write(track.filename + '\n')
+
 class Library():
     def __init__(self):
         self.tracks = {}
@@ -102,6 +120,7 @@ class Library():
 
 if __name__ == '__main__':
     meta = Library()
+    playlist = Playlist('zbeul')
 
     for filename in sys.argv[1:]:
         fileinfo = filetype.guess(filename)
@@ -112,6 +131,9 @@ if __name__ == '__main__':
                 track.analyse_track()
                 track.get_meta()
                 meta.add(track)
+                playlist.add(track)
+
+    playlist.to_file()
 
     for key, item in meta.tracks.items():
         print(key)
