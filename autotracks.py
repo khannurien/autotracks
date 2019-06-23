@@ -34,7 +34,7 @@ class Track():
         # the .meta file contains two lines -- first is key, second is bpm
         with open(self.meta) as meta:
             self.key = meta.readline().rstrip()
-            self.bpm = meta.readline().rstrip()
+            self.bpm = float(meta.readline().rstrip())
 
     def neighbours(self):
         """Get the list of compatible keys in neighbourhood.
@@ -82,6 +82,7 @@ class Playlist():
         Arguments:
             track {Track} -- A Track object.
         """
+
         if track not in self.tracks:
             self.tracks.append(track)
 
@@ -91,20 +92,23 @@ class Playlist():
         Arguments:
             track {Track} -- A Track object.
         """
+  
         if track in self.tracks:
             self.tracks.remove(track)
 
     def to_file(self):
         """Save the playlist to an m3u file.
         """
+  
         with open(self.name + '.m3u', mode='w') as playlist:
             for track in self.tracks:
-                playlist.write(track.filename + ' # ' + track.key + '\n')
+                playlist.write(
+                    track.filename + ' # ' + track.key + ' / ' + str(round(track.bpm)) + '\n'
+                )
 
 class Library():
     def __init__(self):
         self.tracks = {}
-        self.keys = set()
         self.neighbours = {}
 
     def _check_file(self, filename):
@@ -116,6 +120,7 @@ class Library():
         Returns:
             boolean -- True if the file is of audio type, else False.
         """
+
         fileinfo = filetype.guess(filename)
 
         if fileinfo:
@@ -132,7 +137,6 @@ class Library():
         """
 
         self.tracks[track.filename] = track
-        self.keys.add(track.key)
         self.neighbours[track.filename] = set()
         
         for filename, other in self.tracks.items():
@@ -177,45 +181,43 @@ class Library():
             if track in neighbours:
                 neighbours.remove(track)
 
-    def discover_paths(self, path, track, paths):
-        path.append(track)
-        neighbours = self._get_neighbours(track)
+    def find_successors(self, track):
+        return self._get_neighbours(track)
 
-        for next in neighbours:
-            # check if that next track is compatible with the latest added to our path
-            #if next not in used and next.is_neighbour(path[-1]):
-            if next not in path:
-                if next.is_neighbour(path[-1]):
-                    print("neighbour = " + next.filename)
+    def discover_graph(self, track, graph):
+        graph[track.filename] = self.find_successors(track)
+
+        for next in graph[track.filename]:
+            if next.filename not in graph.keys():
+                self.discover_graph(next, graph)
+
+    def get_paths(self, track):
+        graph = {}
+        self.discover_graph(track, graph)
+
+        paths = []
+        longest = 0
+        for filename, neighbours in graph.items():
+            path = [track]
+            
+            # TODO follow the neighbours!
+            for next in neighbours:
+                if next not in path:
                     path.append(next)
-                    # recursively check in the next track's neighbourhood
-                    self.discover_paths(path, next, paths)
-                    paths.append(path)
-                """
-                else:
-                    new_path = path.copy()
-                    del(new_path[-1])
-                    self.discover_paths(new_path, next, paths)
-                """
+            paths.append(path)
 
         return paths
 
     def create_playlist(self, name, first):
-        playlist = Playlist(name)
+        playlist = None
+        paths = self.get_paths(first)
 
-        paths = []
-        
-        i = 0
-        self.discover_paths([], first, paths)
-
-        if len(paths) > 0:
-            longest = len(paths[0])
-            for path in paths:
-                if longest <= len(path):
-                    print(paths.index(path))
-                    for track in path:
-                        playlist.add(track)
-                        print(track.filename + " key: " + track.key)
+        longest = 0
+        for path in paths:
+            if len(path) > longest:
+                playlist = Playlist(name)
+                for track in path:
+                    playlist.add(track)
 
         return playlist
 
@@ -226,18 +228,8 @@ if __name__ == '__main__':
     meta = Library()
     meta.add(sys.argv[1:])
 
-    for key, item in meta.tracks.items():
-        print(key)
-        print(item.key)
-        print(item.bpm)
-        print(item.neighbours())
-        for track in meta.neighbours[item.filename]:
-            print('--> ' + track.filename)
-        print('\n')
-
     random_filename, random_track = random.choice(list(meta.tracks.items()))
     print("start with: " + random_filename)
 
     playlist = meta.create_playlist('coucou', random_track)
-    print(playlist.name)
     playlist.to_file()
