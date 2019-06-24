@@ -35,8 +35,11 @@ class Playlist():
         Save the playlist to an m3u file.
         """
   
-        with open(self.name + '.m3u', mode='w') as playlist:
-            for track in self.tracks:
-                playlist.write(
-                    track.filename + ' # ' + track.key + ' @ ' + str(round(track.bpm)) + '\n'
-                )
+        try:
+            with open(self.name + '.m3u', mode='w') as playlist:
+                for track in self.tracks:
+                    playlist.write(
+                        track.filename + ' # ' + track.key + ' @ ' + str(round(track.bpm)) + '\n'
+                    )
+        except OSError:
+            print('Could not open file {}.').format(self.name + '.m3u')

@@ -30,9 +30,12 @@ class Track():
             self.analyse_audio()
 
         # the .meta file contains two lines -- first is key, second is bpm
-        with open(self.meta) as meta:
-            self.key = meta.readline().rstrip()
-            self.bpm = float(meta.readline().rstrip())
+        try:
+            with open(self.meta) as meta:
+                self.key = meta.readline().rstrip()
+                self.bpm = float(meta.readline().rstrip())
+        except OSError:
+            print('Could not open file {}.').format(self.name + '.m3u')
 
     def neighbours(self):
         """

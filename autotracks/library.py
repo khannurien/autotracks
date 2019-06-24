@@ -187,13 +187,12 @@ class Library():
         paths = self.get_paths(first, last, graph)
 
         # get only the longest path
-        longest = 0
-        for path in paths:
-            if len(path) > longest:
-                del(playlist)
-                playlist = Playlist(name)
-                for track in path:
-                    playlist.add(track)
+        paths = sorted(paths, key=len, reverse=True)
+        path = paths[0]
+
+        # create and return the playlist
+        playlist = Playlist(name)
+        for track in path:
+            playlist.add(track)
 
         return playlist
-
