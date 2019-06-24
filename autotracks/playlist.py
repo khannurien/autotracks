@@ -9,7 +9,8 @@ class Playlist():
         self.tracks = []
 
     def add(self, track):
-        """Add a Track to the playlist.
+        """
+        Add a Track to the playlist.
         
         Arguments:
             track {Track} -- A Track object.
@@ -19,7 +20,8 @@ class Playlist():
             self.tracks.append(track)
 
     def remove(self, track):
-        """Remove a Track from the playlist.
+        """
+        Remove a Track from the playlist.
         
         Arguments:
             track {Track} -- A Track object.
@@ -29,11 +31,12 @@ class Playlist():
             self.tracks.remove(track)
 
     def to_file(self):
-        """Save the playlist to an m3u file.
+        """
+        Save the playlist to an m3u file.
         """
   
         with open(self.name + '.m3u', mode='w') as playlist:
             for track in self.tracks:
                 playlist.write(
-                    track.filename + ' # ' + track.key + ' / ' + str(round(track.bpm)) + '\n'
+                    track.filename + ' # ' + track.key + ' @ ' + str(round(track.bpm)) + '\n'
                 )

@@ -13,7 +13,8 @@ class Track():
             self.meta = None
 
     def analyse_audio(self):
-        """Start track analysis with bpm-tools and keyfinder-cli.
+        """
+        Start track analysis with bpm-tools and keyfinder-cli.
         """
 
         if not self.meta:
@@ -21,7 +22,8 @@ class Track():
             self.meta = self.filename + '.meta'
 
     def set_meta(self):
-        """Parse metadata file and save values locally.
+        """
+        Parse metadata file and save values locally.
         """
 
         if not self.meta:
@@ -33,7 +35,11 @@ class Track():
             self.bpm = float(meta.readline().rstrip())
 
     def neighbours(self):
-        """Get the list of compatible keys in neighbourhood.
+        """
+        Get the list of compatible keys in neighbourhood.
+        
+        Returns:
+            List[str] -- The list of keys.
         """
         
         # own key is always a valid neighbour
@@ -65,4 +71,13 @@ class Track():
         return neighbourhood
 
     def is_neighbour(self, other):
+        """
+        Check if the track is in the neighbourhood of another Track.
+        
+        Arguments:
+            other {Track} -- A Track object.
+        
+        Returns:
+            boolean -- True if both tracks are neighbours, else False.
+        """
         return self.key in other.neighbours()
