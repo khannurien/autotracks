@@ -2,6 +2,7 @@
 # coding: utf-8
 
 import filetype
+import os
 
 from autotracks.track import Track
 from autotracks.playlist import Playlist
@@ -22,11 +23,12 @@ class Library():
             boolean -- True if the file is of audio type, else False.
         """
 
-        fileinfo = filetype.guess(filename)
+        if os.path.exists(filename):
+            fileinfo = filetype.guess(filename)
 
-        if fileinfo:
-            if 'audio' in fileinfo.mime:
-                return True
+            if fileinfo:
+                if 'audio' in fileinfo.mime:
+                    return True
 
         return False
 

@@ -9,7 +9,7 @@ from autotracks import track, playlist, library
 
 if __name__ == '__main__':
     meta = library.Library()
-    meta.add(sys.argv[1:])
+    meta.add(sys.argv[2:])
 
     random_first_filename, random_first_track = random.choice(list(meta.tracks.items()))
     random_last_filename, random_last_track = random.choice(list(meta.tracks.items()))
@@ -17,6 +17,6 @@ if __name__ == '__main__':
     print('  › Starting with: ' + random_first_filename)
     print('  › Ending with: ' + random_last_filename + '\n')
 
-    playlist = meta.create_playlist('coucou', random_first_track, random_last_track)
+    playlist = meta.create_playlist(sys.argv[1], random_first_track, random_last_track)
     if playlist:
         playlist.to_file()
