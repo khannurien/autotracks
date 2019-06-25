@@ -39,7 +39,8 @@ class Playlist():
             with open(self.name + '.m3u', mode='w') as playlist:
                 for track in self.tracks:
                     playlist.write(
-                        track.filename + ' # ' + track.key + ' @ ' + str(round(track.bpm)) + '\n'
+                        '# ' + track.key + ' @ ' + str(round(track.bpm)) + '\n'
+                        + track.filename + '\n'
                     )
         except OSError:
             print('Could not open file {}.').format(self.name + '.m3u')
