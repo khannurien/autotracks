@@ -18,4 +18,5 @@ if __name__ == '__main__':
     print('  › Ending with: ' + random_last_filename + '\n')
 
     playlist = meta.create_playlist('coucou', random_first_track, random_last_track)
-    playlist.to_file()
+    if playlist:
+        playlist.to_file()

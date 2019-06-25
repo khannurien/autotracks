@@ -32,32 +32,22 @@ class Library():
 
     def _add(self, track):
         """
-        Add a Track to the library and update library's neighbourhood.
+        Add a Track to the library and update library's neighbourhood with
+        associated scores.
         
         Arguments:
             track {Track} -- A Track object.
         """
 
         self.tracks[track.filename] = track
-        self.neighbours[track.filename] = set()
+        self.neighbours[track.filename] = [] 
         
         for filename, other in self.tracks.items():
             if other.is_neighbour(track) and other.filename != track.filename:
-                self.neighbours[track.filename].add(other)
-                self.neighbours[other.filename].add(track)
-
-    def _get_neighbours(self, track):
-        """
-        Get the neighbours of a track.
-        
-        Arguments:
-            track {Track} -- A Track object.
-        
-        Returns:
-            List[Track] -- A list of Tracks in the neighbourhood.
-        """
-        
-        return self.neighbours[track.filename]
+                score_for = track.score_for(other)
+                score_from = other.score_for(track)
+                self.neighbours[track.filename].append((score_for, other))
+                self.neighbours[other.filename].append((score_from, track))
 
     def count(self):
         """
@@ -94,22 +84,23 @@ class Library():
         self.tracks.pop(track.filename)
         self.neighbours.pop(track.filename)
 
+        # TODO that probably doesn't work
         for filename, neighbours in self.neighbours.items():
             if track in neighbours:
                 neighbours.remove(track)
 
     def find_successors(self, track):
         """
-        Get the list of Tracks in the neighbourhood.
+        Get the neighbours of a track.
         
         Arguments:
             track {Track} -- A Track object.
         
         Returns:
-            List[Track] -- The List of Track objects in the neighbourhood.
+            List[(int, Track)] -- A list of Tracks in the neighbourhood, and their score.
         """
-
-        return self._get_neighbours(track)
+        
+        return self.neighbours[track.filename]
 
     def discover_graph(self, first, graph):
         """
@@ -123,7 +114,7 @@ class Library():
 
         graph[first.filename] = self.find_successors(first)
 
-        for next in graph[first.filename]:
+        for score, next in graph[first.filename]:
             if next.filename not in graph.keys():
                 self.discover_graph(next, graph)
 
@@ -145,7 +136,7 @@ class Library():
             List[List[Track]] -- The list of paths, represented as lists themselves.
         """
 
-        # every path starts with the first track
+        # each "first" track is added to the path
         path = path + [first]
 
         # prevent cycles
@@ -157,12 +148,18 @@ class Library():
             return []
 
         paths = []
-        for next in graph[first.filename]:
-            if next not in path:
-                new_paths = self.get_paths(next, last, graph, path)
+        best_score, best_track = float('inf'), None
 
-                for new_path in new_paths:
-                    paths.append(new_path)
+        for score, next in graph[first.filename]:
+            if next not in path:
+                if score < best_score:
+                    best_score, best_track = score, next
+
+        if best_track:
+            new_paths = self.get_paths(best_track, last, graph, path)
+
+            for new_path in new_paths:
+                paths.append(new_path)
 
         return paths
 
@@ -176,7 +173,7 @@ class Library():
             last {Track} -- The ending Track object.
         
         Returns:
-            Playlist -- [description]
+            Playlist -- The resulting Playlist is the longest path from first to last.
         """
 
         playlist = None
@@ -187,12 +184,15 @@ class Library():
         paths = self.get_paths(first, last, graph)
 
         # get only the longest path
-        paths = sorted(paths, key=len, reverse=True)
-        path = paths[0]
+        if paths:
+            paths = sorted(paths, key=len, reverse=True)
+            path = paths[0]
 
-        # create and return the playlist
-        playlist = Playlist(name)
-        for track in path:
-            playlist.add(track)
+            # create and return the playlist
+            playlist = Playlist(name)
+            for track in path:
+                playlist.add(track)
 
-        return playlist
+            return playlist
+        else:
+            return None

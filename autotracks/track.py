@@ -84,3 +84,16 @@ class Track():
             boolean -- True if both tracks are neighbours, else False.
         """
         return self.key in other.neighbours()
+
+    def score_for(self, other):
+        """
+        [summary]
+        
+        Arguments:
+            other {Track} -- A Track object.
+        
+        Returns:
+            int -- The score for the other Track.
+        """
+
+        return abs(self.bpm - other.bpm) / 100
