@@ -62,3 +62,10 @@ if __name__ == '__main__':
                 longest = playlist
 
         longest.to_file()
+
+    # show unused tracks
+    unused_tracks = set([track for filename, track in meta.tracks.items()]) - set(longest.tracks)
+    if unused_tracks:
+        print(str(len(unused_tracks)) + ' unused tracks:\n')
+        for track in unused_tracks:
+            print('    » ' + track.filename)
