@@ -18,6 +18,7 @@ class Track():
         """
 
         if not self.meta:
+            print('Analysing audio for ' + self.filename)
             os.system('./extract.sh "' + self.filename + '"')
             self.meta = self.filename + '.meta'
 
