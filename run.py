@@ -36,15 +36,29 @@ if __name__ == '__main__':
         print('Not enough tracks in list.')
         sys.exit(1)
 
-    # TODO we need to maximize playlist size by choosing the best fitted starting and ending tracks
+    # start with a random track, then try with each of the others as last track
     random_first_filename, random_first_track = random.choice(list(meta.tracks.items()))
-    random_last_filename, random_last_track = random.choice(list(meta.tracks.items()))
-    print('\n⚙   Started building playlist...')
-    print('  › Starting with: ' + random_first_filename)
-    print('  › Ending with: ' + random_last_filename + '\n')
+    all_last_tracks = [(filename, track) for (filename, track) in meta.tracks.items() if filename != random_first_filename]
 
-    playlist = meta.create_playlist(sys.argv[1], random_first_track, random_last_track)
-    if playlist:
-        playlist.to_file()
-    else:
-        print('No playlist generated during this run. Try again!')
+    playlists = []
+    print('\n⚙   Building and comparing playlists...')
+    print('  › Starting with: ' + random_first_filename + '\n')
+
+    for last_filename, last_track in all_last_tracks:
+        print('  › Ending with: ' + last_filename)
+
+        playlist = meta.create_playlist(sys.argv[1], random_first_track, last_track)
+        if playlist:
+            playlists.append(playlist)
+            print('    » ' + str(len(playlist.tracks)) + ' tracks.\n')
+        else:
+            print('    » No possible playlist in this case.\n')
+
+    # save the longest playlist
+    if playlists:
+        longest = playlists[0]
+        for playlist in playlists:
+            if len(playlist.tracks) > len(longest.tracks):
+                longest = playlist
+
+        longest.to_file()
