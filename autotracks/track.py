@@ -29,7 +29,7 @@ class Track():
         if not self.meta:
             self.analyse_audio()
 
-        # the .meta file contains two lines -- first is key, second is bpm
+        # the .meta file contains two lines -- first is key, second is BPM
         try:
             with open(self.meta) as meta:
                 self.key = meta.readline().rstrip()
@@ -56,7 +56,7 @@ class Track():
             key_int = int(self.key[0])
             key_char = self.key[1]
 
-        # cycle through the wheel (cf. any Harmonic Mixing Wheel)
+        # cycle through the key wheel (cf. any Harmonic Mixing Wheel)
         if key_int == 12:
             neighbourhood.append(str(key_int - 1) + key_char)
             neighbourhood.append('1' + key_char)
@@ -87,7 +87,7 @@ class Track():
 
     def score_for(self, other):
         """
-        [summary]
+        Compute a score for another track: the closest the BPM, the lower the score.
         
         Arguments:
             other {Track} -- A Track object.
