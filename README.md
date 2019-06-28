@@ -14,6 +14,15 @@ Here is a list of the dependencies that you will require during the build proces
   * libavcodec-dev
   * libavformat-dev
 
+A very naive Dockerfile is provided within the repository. It will produce a whooping ~850 MB image which clearly leaves room for improvement :-)
+
+```
+git clone https://github.com/khannurien/autotracks.git
+cd autotracks
+docker build -t autotracks .
+docker run -v /path/to/audio/files:/tracks -v /path/to/save/playlist:/output autotracks
+```
+
 ## Usage
 Edit `extract.sh` to reflect the actual paths for `keyfinder-cli` and `bpm-tag` on your system.
 

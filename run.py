@@ -57,7 +57,7 @@ if __name__ == '__main__':
     # save only the longest playlist
     if playlists:
         longest = playlists[0]
-        for playlist in playlists:
+        for playlist in playlists[1:]:
             if len(playlist.tracks) > len(longest.tracks):
                 longest = playlist
 
