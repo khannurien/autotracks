@@ -19,8 +19,8 @@ A very naive Dockerfile is provided within the repository. It will produce a who
 ```
 git clone https://github.com/khannurien/autotracks.git
 cd autotracks
-docker build -t autotracks .
-docker run -v /path/to/audio/files:/tracks -v /path/to/save/playlist:/output autotracks
+sudo docker build -t autotracks .
+sudo docker run -v /path/to/audio/files:/tracks -v /path/to/save/playlist:/output autotracks
 ```
 
 ## Usage
@@ -34,10 +34,10 @@ pipenv install
 pipenv shell
 ```
 
-Call `autotracks` with a playlist name and a list of files:
+Call `autotracks` with a playlist name and a directory or a list of files:
 
 ```
-python run.py "my_playlist" tracks/*
+python run.py "my_playlist" tracks/
 ```
 
 That will create a `my_playlist.m3u` file in the current directory.
