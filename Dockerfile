@@ -4,6 +4,9 @@ RUN apt-get update && \
  apt-get install -y \
  build-essential \
  ffmpeg \
+ flac \
+ id3v2 \
+ vorbis-tools \
  git \
  libavcodec-dev \
  libavformat-dev \
