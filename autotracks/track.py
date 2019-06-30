@@ -50,12 +50,15 @@ class Track():
         neighbourhood = [self.key]
 
         # find key signature (1-12) and scale (m is Minor, d is Major)
-        if str.isdigit(self.key[1]):
-            key_int = int(self.key[0] + self.key[1])
-            key_char = self.key[2]
+        if 2 <= len(self.key) <= 3:
+            if str.isdigit(self.key[1]):
+                key_int = int(self.key[0] + self.key[1])
+                key_char = self.key[2]
+            else:
+                key_int = int(self.key[0])
+                key_char = self.key[1]
         else:
-            key_int = int(self.key[0])
-            key_char = self.key[1]
+            raise ValueError("Could not read track's key.")
 
         # cycle through the key wheel (cf. any Harmonic Mixing Wheel)
         if key_int == 12:
@@ -84,7 +87,11 @@ class Track():
         Returns:
             boolean -- True if both Tracks are neighbours, else False.
         """
-        return self.key in other.neighbours()
+        
+        try:
+            return self.key in other.neighbours()
+        except ValueError:
+            return False
 
     def score_for(self, other):
         """
