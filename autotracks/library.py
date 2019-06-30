@@ -162,10 +162,9 @@ class Library():
                     best_score, best_track = score, next
 
         if best_track:
-            new_path = self.get_paths(best_track, last, graph, path)
+            next_path = self.get_paths(best_track, last, graph, path)
 
-            for i, new_path in enumerate(new_path):
-                print('new path ' + str(i))
+            for new_path in next_path:
                 paths.append(new_path)
 
         return paths
