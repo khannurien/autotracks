@@ -9,4 +9,4 @@ else
 fi
 
 $KEYFINDER_CLI -n openkey "$1" > "$1".meta
-$BPM_TAG -n "$1" 2>&1 > /dev/null | awk -F ": " '{print $NF}' | cut -d ' ' -f 1 >> "$1".meta
+$BPM_TAG -n "$1" 2>&1 /dev/null | grep "BPM" | tail -n 1 | awk -F ": " '{print $NF}' | cut -d ' ' -f 1 >> "$1".meta
