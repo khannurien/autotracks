@@ -10,7 +10,7 @@ class Playlist():
 
     def add(self, track):
         """
-        Add a Track to the playlist.
+        Add a Track to the Playlist.
         
         Arguments:
             track {Track} -- A Track object.
@@ -21,7 +21,7 @@ class Playlist():
 
     def remove(self, track):
         """
-        Remove a Track from the playlist.
+        Remove a Track from the Playlist.
         
         Arguments:
             track {Track} -- A Track object.
@@ -32,7 +32,7 @@ class Playlist():
 
     def to_file(self):
         """
-        Save the playlist to an m3u file.
+        Save the Playlist to a playlist_name.m3u file.
         """
   
         try:

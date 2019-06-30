@@ -34,8 +34,7 @@ class Library():
 
     def _add(self, track):
         """
-        Add a Track to the library and update library's neighbourhood with
-        associated scores.
+        Add a Track to the Library and update its neighbourhood with associated scores.
         
         Arguments:
             track {Track} -- A Track object.
@@ -53,20 +52,20 @@ class Library():
 
     def count(self):
         """
-        Get the number of tracks in the library.
+        Get the number of tracks in the Library.
         
         Returns:
-            int -- The library's length.
+            int -- The Library's length.
         """
 
         return len(self.tracks)
 
     def add(self, filenames):
         """
-        Analyse a list of files and add Tracks to the library.
+        Analyse a list of files and add Tracks to the Library.
         
         Arguments:
-            tracks {[type]} -- [description]
+            tracks {List[str]} -- The list of filenames to check and add to the Library.
         """
         
         for filename in filenames:
@@ -77,19 +76,23 @@ class Library():
 
     def remove(self, track):
         """
-        Remove a Track from the library and update library's neighbourhood.
+        Remove a Track from the Library and update neighbourhood.
         
         Arguments:
             track {Track} -- A Track object.
         """
 
+        # remove track from library
         self.tracks.pop(track.filename)
         self.neighbours.pop(track.filename)
 
-        # TODO that probably doesn't work
+        # remove references to it in other tracks' neighbourhood
+        updated = dict(self.neighbours)
         for filename, neighbours in self.neighbours.items():
             if track in neighbours:
-                neighbours.remove(track)
+                updated.pop(track.filename)
+
+        self.neighbours = dict(updated)
 
     def find_successors(self, track):
         """
@@ -106,8 +109,8 @@ class Library():
 
     def discover_graph(self, first, graph):
         """
-        Represent the "possible playlists problem" as a graph problem: tracks are
-        nodes and edges connect tracks in the same neighbourhood.
+        Represent the "possible playlists problem" as a graph problem: tracks are nodes
+        and edges connect tracks in the same neighbourhood.
         
         Arguments:
             first {Track} -- A Track object.
@@ -122,9 +125,8 @@ class Library():
 
     def get_paths(self, first, last, graph, path=[]):
         """
-        Recursive Depth First Search to get all paths from a starting Track to
-        and ending Track.
-        Implementation courtesy of https://www.python.org/doc/essays/graphs/ :-)
+        Recursive Depth First Search to get all paths from a starting Track to an ending
+        Track. Implementation courtesy of https://www.python.org/doc/essays/graphs/ :-)
         
         Arguments:
             first {Track} -- A Track object.
@@ -150,17 +152,20 @@ class Library():
             return []
 
         paths = []
+        # float('inf') will always be less than any number
         best_score, best_track = float('inf'), None
 
+        # use successors' score to determine which path to follow
         for score, next in graph[first.filename]:
             if next not in path:
                 if score < best_score:
                     best_score, best_track = score, next
 
         if best_track:
-            new_paths = self.get_paths(best_track, last, graph, path)
+            new_path = self.get_paths(best_track, last, graph, path)
 
-            for new_path in new_paths:
+            for i, new_path in enumerate(new_path):
+                print('new path ' + str(i))
                 paths.append(new_path)
 
         return paths

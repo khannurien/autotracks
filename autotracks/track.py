@@ -14,7 +14,7 @@ class Track():
 
     def analyse_audio(self):
         """
-        Start track analysis with bpm-tools and keyfinder-cli.
+        Start audio analysis with bpm-tools and keyfinder-cli.
         """
 
         if not self.meta:
@@ -76,19 +76,19 @@ class Track():
 
     def is_neighbour(self, other):
         """
-        Check if the track is in the neighbourhood of another Track.
+        Check if the Track is in the neighbourhood of another Track.
         
         Arguments:
             other {Track} -- A Track object.
         
         Returns:
-            boolean -- True if both tracks are neighbours, else False.
+            boolean -- True if both Tracks are neighbours, else False.
         """
         return self.key in other.neighbours()
 
     def score_for(self, other):
         """
-        Compute a score for another track: the closest the BPM, the lower the score.
+        Compute a score for another Track: the closest the BPM, the lower the score.
         
         Arguments:
             other {Track} -- A Track object.
