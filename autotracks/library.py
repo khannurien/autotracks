@@ -70,21 +70,22 @@ class Library():
             tracks {List[str]} -- The list of filenames to check and add to the Library.
         """
 
-        total = len(filenames)
+        # create a list of Tracks from filenames according to MIME type
+        tracks = [Track(filename) for filename in filenames if self._check_file(filename)]
+
+        total = len(tracks)
         progress = 1
 
-        for filename in filenames:
-            if self._check_file(filename):
-                track = Track(filename)
-                try:
-                    print('[{}/{}] Analysing audio for {}'.format(progress, total, filename))
-                    track.set_meta()
-                    self._add(track)
-                except MalformedMetaFileError as error:
-                    print('✘ Malformed metadata file for {} ({})'.format(error.filename, error.message))
-                    self.errors[filename] = track
-                finally:
-                    progress += 1
+        for track in tracks:
+            try:
+                print('[{}/{}] Analysing audio for {}'.format(progress, total, track.filename))
+                track.set_meta()
+                self._add(track)
+            except MalformedMetaFileError as error:
+                print('✘ Malformed metadata file for {} ({})'.format(error.filename, error.message))
+                self.errors[track.filename] = track
+            finally:
+                progress += 1
 
     def remove(self, track):
         """
