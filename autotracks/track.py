@@ -43,7 +43,7 @@ class Track():
                 self.key = meta.readline().rstrip()
                 self.bpm = float(meta.readline().rstrip())
         except OSError:
-            print('Could not open file {}.'.format(self.meta))
+            print('Could not open file {}.'.format(self.filename + '.meta'))
 
     def neighbours(self):
         """
