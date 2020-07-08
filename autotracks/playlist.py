@@ -11,7 +11,7 @@ class Playlist():
     def add(self, track):
         """
         Add a Track to the Playlist.
-        
+
         Arguments:
             track {Track} -- A Track object.
         """
@@ -22,11 +22,11 @@ class Playlist():
     def remove(self, track):
         """
         Remove a Track from the Playlist.
-        
+
         Arguments:
             track {Track} -- A Track object.
         """
-  
+
         if track in self.tracks:
             self.tracks.remove(track)
 
@@ -34,7 +34,7 @@ class Playlist():
         """
         Save the Playlist to a playlist_name.m3u file.
         """
-  
+
         try:
             with open(self.name + '.m3u', mode='w') as playlist:
                 for track in self.tracks:
@@ -43,4 +43,5 @@ class Playlist():
                         + track.filename + '\n'
                     )
         except OSError:
-            print('Could not open file {}.').format(self.name + '.m3u')
+            print('Could not open file {}.'.format(self.name + '.m3u'))
+

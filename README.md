@@ -41,3 +41,15 @@ python run.py "my_playlist" tracks/
 ```
 
 That will create a `my_playlist.m3u` file in the current directory.
+
+If tracks remain unused or produced errors, they will be displayed after playlist generation. You can then append them manually to the playlist if you wish.
+
+Note: `autotracks` create a `.meta` file alongside each track of the list. These files contain the track key and BPM and are not removed after generation, in order to keep audio analysis results for further work. They can be safely removed should you not need them anymore.
+
+## Performance
+`autotracks` is a single-threaded application. Using threads to divide the problem would greatly improve performance.
+
+On an Intel i5-2400 CPU @ 3.10GHz, sorting a folder containing 317 tracks takes approximately 37 minutes, including audio analysis.
+
+In that test case, only one track remained unused, and 3 produced errors (raised by `keyfinder-cli` for reasons yet unknown).
+

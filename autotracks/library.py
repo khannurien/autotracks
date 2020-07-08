@@ -6,19 +6,21 @@ import os
 
 from autotracks.track import Track
 from autotracks.playlist import Playlist
+from autotracks.errors import MalformedMetaFileError
 
 class Library():
     def __init__(self):
         self.tracks = {}
         self.neighbours = {}
+        self.errors = {}
 
     def _check_file(self, filename):
         """
         Ensure a file's MIME type is audio/*.
-        
+
         Arguments:
             filename {str} -- The path to a file.
-        
+
         Returns:
             boolean -- True if the file is of audio type, else False.
         """
@@ -35,14 +37,14 @@ class Library():
     def _add(self, track):
         """
         Add a Track to the Library and update its neighbourhood with associated scores.
-        
+
         Arguments:
             track {Track} -- A Track object.
         """
 
         self.tracks[track.filename] = track
         self.neighbours[track.filename] = [] 
-        
+
         for filename, other in self.tracks.items():
             if other.is_neighbour(track) and other.filename != track.filename:
                 score_for = track.score_for(other)
@@ -53,7 +55,7 @@ class Library():
     def count(self):
         """
         Get the number of tracks in the Library.
-        
+
         Returns:
             int -- The Library's length.
         """
@@ -63,21 +65,31 @@ class Library():
     def add(self, filenames):
         """
         Analyse a list of files and add Tracks to the Library.
-        
+
         Arguments:
             tracks {List[str]} -- The list of filenames to check and add to the Library.
         """
-        
+
+        total = len(filenames)
+        progress = 1
+
         for filename in filenames:
             if self._check_file(filename):
                 track = Track(filename)
-                track.set_meta()
-                self._add(track)
+                try:
+                    print('[{}/{}] Analysing audio for {}'.format(progress, total, filename))
+                    track.set_meta()
+                    self._add(track)
+                except MalformedMetaFileError as error:
+                    print('✘ Malformed metadata file for {} ({})'.format(error.filename, error.message))
+                    self.errors[filename] = track
+                finally:
+                    progress += 1
 
     def remove(self, track):
         """
         Remove a Track from the Library and update neighbourhood.
-        
+
         Arguments:
             track {Track} -- A Track object.
         """
@@ -97,21 +109,21 @@ class Library():
     def find_successors(self, track):
         """
         Get the neighbours of a track.
-        
+
         Arguments:
             track {Track} -- A Track object.
-        
+
         Returns:
             List[(int, Track)] -- A list of Tracks in the neighbourhood, and their score.
         """
-        
+
         return self.neighbours[track.filename]
 
     def discover_graph(self, first, graph):
         """
         Represent the "possible playlists problem" as a graph problem: tracks are nodes
         and edges connect tracks in the same neighbourhood.
-        
+
         Arguments:
             first {Track} -- A Track object.
             graph {Dict} -- A dictionary which will represent the nodes and edges.
@@ -127,15 +139,15 @@ class Library():
         """
         Recursive Depth First Search to get all paths from a starting Track to an ending
         Track. Implementation courtesy of https://www.python.org/doc/essays/graphs/ :-)
-        
+
         Arguments:
             first {Track} -- A Track object.
             last {Track} -- A Track object.
             graph {Dict} -- The representation obtained by self.discover_graph().
-        
+
         Keyword Arguments:
             path {List[]} -- An empty list to initiate the first path (default: {[]}).
-        
+
         Returns:
             List[List[Track]] -- The list of paths, represented as lists themselves.
         """
@@ -172,17 +184,15 @@ class Library():
     def create_playlist(self, name, first, last):
         """
         Discover the Library's graph and draw every path betweens tracks.
-        
+
         Arguments:
             name {str} -- The playlist's name.
             first {Track} -- The starting Track object.
             last {Track} -- The ending Track object.
-        
+
         Returns:
             Playlist -- The resulting Playlist is the longest path from first to last.
         """
-
-        playlist = None
 
         # discover paths between the first and the last tracks
         graph = {}
@@ -202,3 +212,4 @@ class Library():
             return playlist
         else:
             return None
+
