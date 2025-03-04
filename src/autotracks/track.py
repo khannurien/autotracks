@@ -134,4 +134,6 @@ class Track:
         # if div >= 1:
         #     return...
 
+        # TODO: generally find a better way to score tracks
+
         return abs(self.bpm - other.bpm) / 100

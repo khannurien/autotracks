@@ -9,6 +9,10 @@ class Playlist:
     def __init__(self, name: str):
         self.name = name
 
+    # TODO: ability to score a playlist (metrics to find)
+    def score_for(self) -> float:
+        pass
+
     def add(self, track: Track) -> None:
         """
         Add a Track to the Playlist.
@@ -19,17 +23,6 @@ class Playlist:
 
         if track not in self.tracks:
             self.tracks.append(track)
-
-    def remove(self, track: Track) -> None:
-        """
-        Remove a Track from the Playlist.
-
-        Arguments:
-            track {Track} -- A Track object.
-        """
-
-        if track in self.tracks:
-            self.tracks.remove(track)
 
     def to_file(self) -> None:
         """

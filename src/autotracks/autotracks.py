@@ -72,9 +72,6 @@ class Autotracks:
             Playlist -- The longest Playlist from a list of previously generated Playlists.
         """
 
-        lengths: List[int] = [len(playlist.tracks) for playlist in playlists]
-        print(lengths)
-
         if playlists:
             longest: Playlist = playlists[0]
             for playlist in playlists[1:]:
