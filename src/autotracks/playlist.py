@@ -1,14 +1,15 @@
-#!/usr/bin/env python
-# coding: utf-8
+from typing import List
 
-from autotracks.track import Track
+from src.autotracks.track import Track
 
-class Playlist():
-    def __init__(self, name):
+
+class Playlist:
+    tracks: List[Track] = []
+
+    def __init__(self, name: str):
         self.name = name
-        self.tracks = []
 
-    def add(self, track):
+    def add(self, track: Track) -> None:
         """
         Add a Track to the Playlist.
 
@@ -19,7 +20,7 @@ class Playlist():
         if track not in self.tracks:
             self.tracks.append(track)
 
-    def remove(self, track):
+    def remove(self, track: Track) -> None:
         """
         Remove a Track from the Playlist.
 
@@ -30,18 +31,22 @@ class Playlist():
         if track in self.tracks:
             self.tracks.remove(track)
 
-    def to_file(self):
+    def to_file(self) -> None:
         """
         Save the Playlist to a playlist_name.m3u file.
         """
 
         try:
-            with open(self.name + '.m3u', mode='w') as playlist:
+            with open(self.name + ".m3u", mode="w") as playlist:
                 for track in self.tracks:
                     playlist.write(
-                        '# ' + track.key + ' @ ' + str(round(track.bpm)) + '\n'
-                        + track.filename + '\n'
+                        "# "
+                        + track.key
+                        + " @ "
+                        + str(round(track.bpm))
+                        + "\n"
+                        + track.filename
+                        + "\n"
                     )
         except OSError:
-            print('Could not open file {}.'.format(self.name + '.m3u'))
-
+            print("Could not open file {}.".format(self.name + ".m3u"))

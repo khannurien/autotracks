@@ -1,20 +1,72 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-import filetype
 import os
+from typing import Dict, List, Tuple
 
-from autotracks.track import Track
-from autotracks.playlist import Playlist
-from autotracks.errors import MalformedMetaFileError
+import filetype  # type: ignore
 
-class Library():
-    def __init__(self):
-        self.tracks = {}
-        self.neighbours = {}
-        self.errors = {}
+from src.autotracks.error import Error, MalformedMetaFileError
+from src.autotracks.playlist import Playlist
+from src.autotracks.track import Track
 
-    def _check_file(self, filename):
+
+class Library:
+    tracks: Dict[str, Track]
+    neighbours: Dict[str, List[Tuple[float, Track]]]
+    errors: Dict[str, Error]
+
+    def __init__(self, track_filenames: List[str]) -> None:
+        self.tracks, self.neighbours, self.errors = self.load_files(track_filenames)
+
+    def load_files(
+        self, filenames: List[str]
+    ) -> Tuple[
+        Dict[str, Track], Dict[str, List[Tuple[float, Track]]], Dict[str, Error]
+    ]:
+        """
+        Analyse a list of files and add Tracks to the Library.
+
+        Arguments:
+            tracks {List[str]} -- The list of filenames to check and add to the Library.
+
+        Returns:
+            Tuple[
+                Dict[str, Track], Dict[str, List[Tuple[float, Track]]], Dict[str, Error]
+            ] --
+        """
+
+        audio_filenames = [
+            filename for filename in filenames if self.is_audio_file(filename)
+        ]
+
+        tracks: Dict[str, Track] = {}
+        neighbours: Dict[str, List[Tuple[float, Track]]] = {}
+        errors: Dict[str, Error] = {}
+
+        # create all Tracks and initialize their neighbourhoods
+        for filename in audio_filenames:
+            try:
+                track = Track(filename)
+                tracks[filename] = track
+                neighbours[filename] = []
+            except MalformedMetaFileError as error:
+                print(
+                    "✘ Malformed metadata file for {} ({})".format(
+                        error.filename, error.message
+                    )
+                )
+                errors[filename] = error
+
+        # compute all neighbourhoods
+        for _, track in tracks.items():
+            for _, other in tracks.items():
+                if other.is_neighbour(track) and other.filename != track.filename:
+                    score_for = track.score_for(other)
+                    score_from = other.score_for(track)
+                    neighbours[track.filename].append((score_for, other))
+                    neighbours[other.filename].append((score_from, track))
+
+        return tracks, neighbours, errors
+
+    def is_audio_file(self, filename: str) -> bool:
         """
         Ensure a file's MIME type is audio/*.
 
@@ -26,88 +78,15 @@ class Library():
         """
 
         if os.path.exists(filename):
-            fileinfo = filetype.guess(filename)
+            fileinfo = filetype.guess(filename)  # type: ignore
 
             if fileinfo:
-                if 'audio' in fileinfo.mime:
+                if "audio" in fileinfo.mime:
                     return True
 
         return False
 
-    def _add(self, track):
-        """
-        Add a Track to the Library and update its neighbourhood with associated scores.
-
-        Arguments:
-            track {Track} -- A Track object.
-        """
-
-        self.tracks[track.filename] = track
-        self.neighbours[track.filename] = [] 
-
-        for filename, other in self.tracks.items():
-            if other.is_neighbour(track) and other.filename != track.filename:
-                score_for = track.score_for(other)
-                score_from = other.score_for(track)
-                self.neighbours[track.filename].append((score_for, other))
-                self.neighbours[other.filename].append((score_from, track))
-
-    def count(self):
-        """
-        Get the number of tracks in the Library.
-
-        Returns:
-            int -- The Library's length.
-        """
-
-        return len(self.tracks)
-
-    def add(self, filenames):
-        """
-        Analyse a list of files and add Tracks to the Library.
-
-        Arguments:
-            tracks {List[str]} -- The list of filenames to check and add to the Library.
-        """
-
-        # create a list of Tracks from filenames according to MIME type
-        tracks = [Track(filename) for filename in filenames if self._check_file(filename)]
-
-        total = len(tracks)
-        progress = 1
-
-        for track in tracks:
-            try:
-                print('[{}/{}] Analysing audio for {}'.format(progress, total, track.filename))
-                track.set_meta()
-                self._add(track)
-            except MalformedMetaFileError as error:
-                print('✘ Malformed metadata file for {} ({})'.format(error.filename, error.message))
-                self.errors[track.filename] = track
-            finally:
-                progress += 1
-
-    def remove(self, track):
-        """
-        Remove a Track from the Library and update neighbourhood.
-
-        Arguments:
-            track {Track} -- A Track object.
-        """
-
-        # remove track from library
-        self.tracks.pop(track.filename)
-        self.neighbours.pop(track.filename)
-
-        # remove references to it in other tracks' neighbourhood
-        updated = dict(self.neighbours)
-        for filename, neighbours in self.neighbours.items():
-            if track in neighbours:
-                updated.pop(track.filename)
-
-        self.neighbours = dict(updated)
-
-    def find_successors(self, track):
+    def find_successors(self, track: Track) -> List[Tuple[float, Track]]:
         """
         Get the neighbours of a track.
 
@@ -120,7 +99,7 @@ class Library():
 
         return self.neighbours[track.filename]
 
-    def discover_graph(self, first, graph):
+    def discover_graph(self, first: Track, graph: Dict[str, List[Tuple[float, Track]]]):
         """
         Represent the "possible playlists problem" as a graph problem: tracks are nodes
         and edges connect tracks in the same neighbourhood.
@@ -132,11 +111,17 @@ class Library():
 
         graph[first.filename] = self.find_successors(first)
 
-        for score, next in graph[first.filename]:
+        for _, next in graph[first.filename]:
             if next.filename not in graph.keys():
                 self.discover_graph(next, graph)
 
-    def get_paths(self, first, last, graph, path=[]):
+    def get_paths(
+        self,
+        first: Track,
+        last: Track,
+        graph: Dict[str, List[Tuple[float, Track]]],
+        path: List[Track] = [],
+    ) -> List[List[Track]]:
         """
         Recursive Depth First Search to get all paths from a starting Track to an ending
         Track. Implementation courtesy of https://www.python.org/doc/essays/graphs/ :-)
@@ -164,9 +149,9 @@ class Library():
         if not graph.get(first.filename):
             return []
 
-        paths = []
+        paths: List[List[Track]] = []
         # float('inf') will always be less than any number
-        best_score, best_track = float('inf'), None
+        best_score, best_track = float("inf"), None
 
         # use successors' score to determine which path to follow
         for score, next in graph[first.filename]:
@@ -182,7 +167,7 @@ class Library():
 
         return paths
 
-    def create_playlist(self, name, first, last):
+    def create_playlist(self, name: str, first: Track, last: Track):
         """
         Discover the Library's graph and draw every path betweens tracks.
 
@@ -196,7 +181,8 @@ class Library():
         """
 
         # discover paths between the first and the last tracks
-        graph = {}
+        graph: Dict[str, List[Tuple[float, Track]]] = {}
+        # FIXME: make the function tail recursive
         self.discover_graph(first, graph)
         paths = self.get_paths(first, last, graph)
 
@@ -213,4 +199,3 @@ class Library():
             return playlist
         else:
             return None
-
