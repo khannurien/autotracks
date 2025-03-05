@@ -1,4 +1,7 @@
-class Error(Exception):
+from abc import ABC
+
+
+class Error(ABC, Exception):
     pass
 
 

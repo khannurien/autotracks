@@ -5,6 +5,8 @@ from typing import List
 from src.autotracks.autotracks import Autotracks
 from src.autotracks.error import NotEnoughTracksError
 from src.autotracks.playlist import Playlist
+from src.autotracks.strategy import Strategy
+from src.autotracks.strategies.dfs import DFS
 
 
 def main() -> int:
@@ -22,21 +24,28 @@ def main() -> int:
     playlist_name: str = sys.argv[1]
     filenames: List[str] = sys.argv[2:]
 
+    # TODO: initialize logger
+
     # initialize library
     try:
-        autotracks = Autotracks(playlist_name, filenames)
+        autotracks = Autotracks(filenames)
     except NotEnoughTracksError as error:
         print(error.message)
         sys.exit(2)
 
-    # generate playlists and save the longest
-    # TODO: we should score each playlist instead (according to what metric?)
-    playlists = autotracks.generate_playlists()
-    longest: Playlist = autotracks.get_longest_playlist(playlists)
-    longest.to_file()
+    # select strategy
+    # TODO: move to program argument
+    strategy: Strategy = DFS()
+
+    # generate playlists
+    playlists = autotracks.generate_playlists(strategy)
+    # select playlist
+    selected: Playlist = autotracks.select_playlist(strategy, playlists)
+    # write selected playlist to file
+    autotracks.write_playlist(selected, playlist_name)
 
     # show unused tracks in the longest playlist
-    autotracks.show_unused_tracks(longest)
+    autotracks.show_unused_tracks(selected)
 
     # show errors in library
     autotracks.show_errors()
