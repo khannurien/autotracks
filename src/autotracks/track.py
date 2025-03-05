@@ -61,7 +61,7 @@ class Track:
 
         # TODO: use subprocess
         # TODO: remove shell script
-        os.system(f"./extract.sh '{self.filename}'")
+        os.system(f'./extract.sh "{self.filename}"')
         print("Analysed audio for {}".format(self.filename))
 
     def get_metadata(self, meta_filename: str) -> Tuple[float, str]:
