@@ -75,6 +75,16 @@ class Autotracks:
 
         return strategy.select_playlist(playlists)
 
+    def score_playlist(self, strategy: Strategy, playlist: Playlist) -> float:
+        """
+        Return the score of a playlist according to a given strategy.
+
+        Arguments:
+            strategy {Strategy} -- A concrete class that implements the strategy inferance.
+            playlist {Playlist} -- A previously generated valid playlist.
+        """
+        return strategy.score_playlist(playlist)
+
     def write_playlist(self, playlist: Playlist, playlist_filename: str) -> None:
         """
         Save an Autotracks playlist to an m3u file, containing each track's filename and metadata.

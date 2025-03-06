@@ -40,47 +40,39 @@ class DFS(Strategy):
 
         return playlists
 
-    def select_playlist(self, playlists: List[Playlist]) -> Playlist:
+    def create_playlist(self, library: Library, first: Track, last: Track):
         """
-        Naive strategy that selects the longest Playlist across the set.
-
-        Returns:
-            Playlist -- The longest Playlist from the list, or an empty Playlist.
-        """
-
-        # FIXME: call score_playlist
-        # maybe move to abstract class and only implement scoring in concrete class
-        if playlists:
-            longest: Playlist = playlists[0]
-            for playlist in playlists[1:]:
-                if len(playlist.tracks) > len(longest.tracks):
-                    longest = playlist
-
-            return longest
-
-        return Playlist()
-
-    def score_playlist(self, playlist: Playlist) -> float:
-        """
-        TODO: compare playlists with a meaningful scoring system
-
-        """
-        return -math.inf
-
-    def find_successors(
-        self, library: Library, track: Track
-    ) -> List[Tuple[float, Track]]:
-        """
-        Get the neighbours of a track.
+        Discover the Library's graph and draw every path betweens tracks.
 
         Arguments:
-            track {Track} -- A Track object.
+            name {str} -- The playlist's name.
+            first {Track} -- The starting Track object.
+            last {Track} -- The ending Track object.
 
         Returns:
-            List[(int, Track)] -- A list of Tracks in the neighbourhood, and their score.
+            Playlist -- The resulting Playlist is the longest path from first to last.
         """
 
-        return library.neighbours[track.filename]
+        # discover paths between the first and the last tracks
+        graph: Dict[str, List[Tuple[float, Track]]] = {}
+        # FIXME: make the function tail recursive
+        self.discover_graph(library, first, graph)
+        paths = self.get_paths(first, last, graph)
+
+        # TODO: why only the longest?
+        # get only the longest path
+        if paths:
+            paths = sorted(paths, key=len, reverse=True)
+            path = paths[0]
+
+            # create and return the playlist
+            playlist = Playlist()
+            for track in path:
+                playlist.add(track)
+
+            return playlist
+        else:
+            return None
 
     def discover_graph(
         self,
@@ -155,36 +147,44 @@ class DFS(Strategy):
 
         return paths
 
-    def create_playlist(self, library: Library, first: Track, last: Track):
+    def find_successors(
+        self, library: Library, track: Track
+    ) -> List[Tuple[float, Track]]:
         """
-        Discover the Library's graph and draw every path betweens tracks.
+        Get the neighbours of a track.
 
         Arguments:
-            name {str} -- The playlist's name.
-            first {Track} -- The starting Track object.
-            last {Track} -- The ending Track object.
+            track {Track} -- A Track object.
 
         Returns:
-            Playlist -- The resulting Playlist is the longest path from first to last.
+            List[(int, Track)] -- A list of Tracks in the neighbourhood, and their score.
         """
 
-        # discover paths between the first and the last tracks
-        graph: Dict[str, List[Tuple[float, Track]]] = {}
-        # FIXME: make the function tail recursive
-        self.discover_graph(library, first, graph)
-        paths = self.get_paths(first, last, graph)
+        return library.neighbours[track.filename]
 
-        # TODO: why only the longest?
-        # get only the longest path
-        if paths:
-            paths = sorted(paths, key=len, reverse=True)
-            path = paths[0]
+    def select_playlist(self, playlists: List[Playlist]) -> Playlist:
+        """
+        Naive strategy that selects the longest Playlist across the set.
 
-            # create and return the playlist
-            playlist = Playlist()
-            for track in path:
-                playlist.add(track)
+        Returns:
+            Playlist -- The longest Playlist from the list, or an empty Playlist.
+        """
 
-            return playlist
-        else:
-            return None
+        # FIXME: call score_playlist
+        # maybe move to abstract class and only implement scoring in concrete class
+        if playlists:
+            longest: Playlist = playlists[0]
+            for playlist in playlists[1:]:
+                if len(playlist.tracks) > len(longest.tracks):
+                    longest = playlist
+
+            return longest
+
+        return Playlist()
+
+    def score_playlist(self, playlist: Playlist) -> float:
+        """
+        TODO: compare playlists with a meaningful scoring system
+
+        """
+        return -math.inf

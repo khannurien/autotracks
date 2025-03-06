@@ -27,7 +27,7 @@ class Library:
             filenames {List[str]} -- The list of filenames to check for addition to the library.
 
         Returns:
-            Tuple[Dict[str, Track], Dict[str, List[Tuple[float, Track]]], Dict[str, Error]] -- TODO: improve file structures and docs
+            Tuple[Dict[str, Track], Dict[str, List[Tuple[float, Track]]], Dict[str, Error]] -- TODO: improve data structures and docs
         """
 
         audio_filenames = [

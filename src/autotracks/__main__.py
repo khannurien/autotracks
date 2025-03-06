@@ -13,10 +13,10 @@ def main() -> int:
     # TODO: use argparse instead
     if len(sys.argv) < 3:
         print(
-            "Usage: {autotracks} {playlist} {tracks}".format(
+            "Usage: {autotracks} {playlist_name} {filenames}".format(
                 autotracks=sys.argv[0],
-                playlist="<playlist name>",
-                tracks="<track list>",
+                playlist_name="<playlist name>",
+                filenames="<path to audio tracks folder>",
             )
         )
         sys.exit(1)
@@ -41,10 +41,15 @@ def main() -> int:
     playlists = autotracks.generate_playlists(strategy)
     # select playlist
     selected: Playlist = autotracks.select_playlist(strategy, playlists)
+
+    # display playlist score
+    playlist_score: float = autotracks.score_playlist(strategy, selected)
+    print(f"Playlist score: {playlist_score}")
+
     # write selected playlist to file
     autotracks.write_playlist(selected, playlist_name)
 
-    # show unused tracks in the longest playlist
+    # show library tracks that remain unused in the selected playlist
     autotracks.show_unused_tracks(selected)
 
     # show errors in library
