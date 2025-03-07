@@ -168,7 +168,7 @@ class DFS(Strategy):
 
     def score_playlist(self, playlist: Playlist) -> float:
         """
-        FIXME: Naive scoring system: the longer the playlist, the higher its score.
+        Naive scoring system: the longer the playlist, the higher its score.
 
         Returns:
             {float} -- The number of tracks in the playlist.

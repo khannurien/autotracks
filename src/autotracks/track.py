@@ -109,7 +109,7 @@ class Track:
 
     def is_neighbour(self, other: Track) -> bool:
         """
-        Check if the track's key is in the neighbourhood of another track.
+        Check if the track's key is equal to, or is in the neighbourhood of another track's key.
 
         Arguments:
             other {Track} -- Another track to check key neighbourhood with.
@@ -118,7 +118,7 @@ class Track:
             boolean -- True if both track keys are neighbours, else False.
         """
 
-        return self.key in other.neighbouring_keys()
+        return self.key == other.key or self.key in other.neighbouring_keys()
 
     # TODO: Distance score for the key
     # def score_for_key(self, other: Track) -> float:

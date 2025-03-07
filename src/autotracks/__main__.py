@@ -62,9 +62,6 @@ def main() -> int:
     # generate playlists
     playlists = autotracks.generate_playlists(strategy)
 
-    sorted_playlists = sorted(playlists, key=lambda playlist: len(playlist.tracks))
-    print([len(playlist.tracks) for playlist in sorted_playlists])
-
     # select playlist
     selected: Playlist = autotracks.select_playlist(strategy, playlists)
 
