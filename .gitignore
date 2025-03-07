@@ -179,6 +179,7 @@ keyfinder-cli/
 libkeyfinder/
 # autotracks data
 *.m3u
+log/*
 output/*
 tracks/*
 # preserve empty folders

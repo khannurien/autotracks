@@ -1,4 +1,6 @@
+import logging
 import os
+
 from typing import Dict, List, Tuple
 
 import filetype  # type: ignore
@@ -45,7 +47,7 @@ class Library:
                 tracks[filename] = track
                 neighbours[filename] = []
             except MalformedMetaFileError as error:
-                print(
+                logging.error(
                     "✘ Malformed metadata file for {} ({})".format(
                         error.filename, error.message
                     )

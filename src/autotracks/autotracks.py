@@ -1,4 +1,6 @@
+import logging
 import os
+
 from typing import List
 
 from src.autotracks.error import NotEnoughTracksError
@@ -26,7 +28,7 @@ class Autotracks:
             self.library = Library(track_filenames)
 
             if len(self.library.tracks) < 2:
-                print("Not enough tracks in list.")
+                logging.error(f"Not enough tracks in list for path: {from_path}")
                 raise NotEnoughTracksError(
                     "Less than two tracks could be added to the library."
                 )
@@ -40,11 +42,11 @@ class Autotracks:
 
         errors_tracks = len(self.library.errors)
         if errors_tracks > 0:
-            print(
+            logging.error(
                 f"\n{str(errors_tracks)} errors happened with the following tracks:\n"
             )
             for filename, _ in self.library.errors.items():
-                print("    ✘ {}".format(filename))
+                logging.error("    ✘ {}".format(filename))
 
     def generate_playlists(self, strategy: Strategy) -> List[Playlist]:
         """
@@ -101,7 +103,7 @@ class Autotracks:
                         f"# {track.key} @ {str(round(track.bpm))}\n{track.filename}\n"
                     )
         except OSError:
-            print("Could not open file {}.".format(playlist_filename))
+            logging.error("Could not open file {}.".format(playlist_filename))
 
     def show_unused_tracks(self, playlist: Playlist) -> None:
         """
@@ -115,9 +117,9 @@ class Autotracks:
             playlist.tracks
         )
         if unused_tracks:
-            print(f"\n {str(len(unused_tracks))} unused tracks:\n")
+            logging.warning(f"\n {str(len(unused_tracks))} unused tracks:\n")
             for track in unused_tracks:
-                print(
+                logging.warning(
                     "    » "
                     f"{track.filename}"
                     " ("

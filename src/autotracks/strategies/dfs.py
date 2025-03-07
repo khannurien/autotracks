@@ -1,3 +1,4 @@
+import logging
 import math
 
 from typing import Dict, List, Tuple
@@ -20,8 +21,8 @@ class DFS(Strategy):
         playlists: List[Playlist] = []
 
         for first_filename, first_track in library.tracks.items():
-            print("\n⚙   Building and comparing playlists...")
-            print(f"  › Starting with: {first_filename}\n")
+            logging.info("\n⚙   Building and comparing playlists...")
+            logging.info(f"  › Starting with: {first_filename}\n")
 
             all_last_tracks = [
                 (filename, track)
@@ -29,57 +30,48 @@ class DFS(Strategy):
                 if filename != first_filename
             ]
             for last_filename, last_track in all_last_tracks:
-                print(f"  › Ending with: {last_filename}")
+                logging.info(f"  › Ending with: {last_filename}")
 
                 playlist = self.create_playlist(library, first_track, last_track)
-                if playlist:
+                if not playlist.is_empty():
                     playlists.append(playlist)
-                    print(f"    » {str(len(playlist.tracks))} tracks.\n")
+                    logging.info(f"    » {str(len(playlist.tracks))} tracks.\n")
                 else:
-                    print("    » No possible playlist in this case.\n")
+                    logging.info("    » No possible playlist in this case.\n")
 
         return playlists
 
-    def create_playlist(self, library: Library, first: Track, last: Track):
+    def create_playlist(self, library: Library, first: Track, last: Track) -> Playlist:
         """
-        Discover the Library's graph and draw every path betweens tracks.
+        Discover the library's graph by drawing every path betweens tracks, starting from the provided first track. Keep the longest path and save it as a playlist.
 
         Arguments:
-            name {str} -- The playlist's name.
-            first {Track} -- The starting Track object.
-            last {Track} -- The ending Track object.
+            library {Library} -- The considered library of tracks.
+            first {Track} -- A track object that will be the first track in the playlist.
+            last {Track} -- A track object that will be the last track in the playlist.
 
         Returns:
-            Playlist -- The resulting Playlist is the longest path from first to last.
+            {Playlist} -- The resulting playlist for the longest path from the provided first track to the provided last track.
         """
 
         # discover paths between the first and the last tracks
         graph: Dict[str, List[Tuple[float, Track]]] = {}
         # FIXME: make the function tail recursive
         self.discover_graph(library, first, graph)
-        paths = self.get_paths(first, last, graph)
 
-        # TODO: why only the longest?
-        # get only the longest path
-        if paths:
-            paths = sorted(paths, key=len, reverse=True)
-            path = paths[0]
+        # create playlists from paths in the graph
+        paths: List[List[Track]] = self.get_paths(first, last, graph)
+        playlists: List[Playlist] = [Playlist(path_tracks) for path_tracks in paths]
 
-            # create and return the playlist
-            playlist = Playlist()
-            for track in path:
-                playlist.add(track)
-
-            return playlist
-        else:
-            return None
+        # only keep the best scoring playlist
+        return self.select_playlist(playlists)
 
     def discover_graph(
         self,
         library: Library,
         first: Track,
         graph: Dict[str, List[Tuple[float, Track]]],
-    ):
+    ) -> None:
         """
         Represent the "possible playlists problem" as a graph problem: tracks are nodes
         and edges connect tracks in the same neighbourhood.
@@ -97,52 +89,52 @@ class DFS(Strategy):
 
     def get_paths(
         self,
-        first: Track,
-        last: Track,
+        first_track: Track,
+        last_track: Track,
         graph: Dict[str, List[Tuple[float, Track]]],
         path: List[Track] = [],
     ) -> List[List[Track]]:
         """
-        Recursive Depth First Search to get all paths from a starting Track to an ending
-        Track. Implementation courtesy of https://www.python.org/doc/essays/graphs/ :-)
+        Recursive Depth First Search to get all paths from a starting track to an ending
+        track. Implementation courtesy of https://www.python.org/doc/essays/graphs/ :-)
 
         Arguments:
-            first {Track} -- A Track object.
-            last {Track} -- A Track object.
+            first {Track} -- A track object that will be the first track in the playlist.
+            last {Track} -- A track object that will be the last track in the playlist.
             graph {Dict} -- The representation obtained by self.discover_graph().
 
         Keyword Arguments:
-            path {List[]} -- An empty list to initiate the first path (default: {[]}).
+            path {List[]} -- An empty list to initialize the first path (default: {[]}).
 
         Returns:
-            List[List[Track]] -- The list of paths, represented as lists themselves.
+            {List[List[Track]]} -- The list of paths, represented as lists themselves.
         """
 
         # each "first" track is added to the path
-        path = path + [first]
+        path = path + [first_track]
 
         # prevent cycles
-        if first == last:
+        if first_track == last_track:
             return [path]
 
         # return an empty list if there is no path to follow
-        if not graph.get(first.filename):
+        if not graph.get(first_track.filename):
             return []
 
         paths: List[List[Track]] = []
-        # float('inf') will always be less than any number
-        best_score, best_track = float("inf"), None
+        # float('inf') will always be more than any number
+        best_score, best_track = math.inf, None
 
         # use successors' score to determine which path to follow
-        for score, next in graph[first.filename]:
-            if next not in path:
+        for score, track in graph[first_track.filename]:
+            if track not in path:
                 if score < best_score:
-                    best_score, best_track = score, next
+                    best_score, best_track = score, track
 
         if best_track:
-            next_path = self.get_paths(best_track, last, graph, path)
+            next_paths = self.get_paths(best_track, last_track, graph, path)
 
-            for new_path in next_path:
+            for new_path in next_paths:
                 paths.append(new_path)
 
         return paths
@@ -154,37 +146,31 @@ class DFS(Strategy):
         Get the neighbours of a track.
 
         Arguments:
-            track {Track} -- A Track object.
+            track {Track} -- A track object.
 
         Returns:
-            List[(int, Track)] -- A list of Tracks in the neighbourhood, and their score.
+            {List[(int, Track)]} -- A list of tracks in the neighbourhood, along with their scores.
         """
 
         return library.neighbours[track.filename]
 
     def select_playlist(self, playlists: List[Playlist]) -> Playlist:
         """
-        Naive strategy that selects the longest Playlist across the set.
+        Naive strategy that selects the longest playlist across the set.
 
         Returns:
-            Playlist -- The longest Playlist from the list, or an empty Playlist.
+            {Playlist} -- The longest playlist from the list, or an empty playlist is the list is empty.
         """
 
-        # FIXME: call score_playlist
-        # maybe move to abstract class and only implement scoring in concrete class
-        if playlists:
-            longest: Playlist = playlists[0]
-            for playlist in playlists[1:]:
-                if len(playlist.tracks) > len(longest.tracks):
-                    longest = playlist
-
-            return longest
-
-        return Playlist()
+        return next(
+            iter(sorted(playlists, key=self.score_playlist, reverse=True)), Playlist([])
+        )
 
     def score_playlist(self, playlist: Playlist) -> float:
         """
-        TODO: compare playlists with a meaningful scoring system
+        FIXME: Naive scoring system: the longer the playlist, the higher its score.
 
+        Returns:
+            {float} -- The number of tracks in the playlist.
         """
-        return -math.inf
+        return float(len(playlist.tracks))

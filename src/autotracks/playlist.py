@@ -4,15 +4,17 @@ from src.autotracks.track import Track
 
 
 class Playlist:
-    tracks: List[Track] = []
+    tracks: List[Track]
 
-    def add(self, track: Track) -> None:
+    def __init__(self, tracks: List[Track]) -> None:
+        self.tracks = tracks.copy()
+
+    def is_empty(self) -> bool:
         """
-        Add a track to the playlist.
+        Check if the playlist contains any track.
 
-        Arguments:
-            track {Track} -- An Autotracks track object.
+        Returns:
+            {bool} -- True if the playlist is empty.
         """
 
-        if track not in self.tracks:
-            self.tracks.append(track)
+        return len(self.tracks) == 0

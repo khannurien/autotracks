@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import logging
 import os
+
 from typing import Dict, Tuple
 
 from src.autotracks.error import MalformedMetaFileError
@@ -62,7 +64,7 @@ class Track:
         # TODO: use subprocess
         # TODO: remove shell script
         os.system(f'./extract.sh "{self.filename}"')
-        print("Analysed audio for {}".format(self.filename))
+        logging.info("Analysed audio for {}".format(self.filename))
 
     def get_metadata(self, meta_filename: str) -> Tuple[float, str]:
         """
@@ -91,7 +93,7 @@ class Track:
 
                 return bpm, key
         except OSError as error:
-            print("Could not open file {}.".format(meta_filename))
+            logging.error("Could not open file {}.".format(meta_filename))
             raise MalformedMetaFileError(meta_filename, str(error))
 
     def neighbouring_keys(self) -> Tuple[str, str, str]:
