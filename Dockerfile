@@ -37,7 +37,7 @@ RUN git clone https://www.pogo.org.uk/~mark/bpm-tools.git && \
  make install && \
  cd ..
 
-RUN python3 -m pip install dotenv filetype pytest
+RUN python3 -m pip install dotenv filetype pytest ruff
 
 COPY ./src /app/src
 COPY ./extract.sh /app/extract.sh
@@ -51,7 +51,7 @@ ENV LANG=C.UTF-8
 ENV LC_ALL=C.UTF-8
 ENV LD_LIBRARY_PATH="/usr/local/lib"
 
-ENTRYPOINT ["python3", "-m", "src.autotracks", "/output/playlist", "/tracks"]
+ENTRYPOINT ["python3", "-m", "src.autotracks", "/output/playlist.m3u", "/tracks"]
 
 # FROM python:3.12-slim as base
 

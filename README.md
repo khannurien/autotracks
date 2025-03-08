@@ -6,14 +6,24 @@
 
 You will need to build [bpm-tools](https://www.pogo.org.uk/~mark/bpm-tools/), [libkeyfinder](https://github.com/mixxxdj/libKeyFinder) and [keyfinder-cli](https://github.com/EvanPurkhiser/keyfinder-cli).
 
-Here is a list of the dependencies that you will require during the build process:
+Here is a list of the dependencies that you will require to build Autotracks and its dependencies:
 
+  * `build-essential`
   * `cmake`
   * `ffmpeg`
+  * `git`
   * `libfftw3-dev`
   * `libavutil-dev`
   * `libavcodec-dev`
   * `libavformat-dev`
+  * `sox`
+
+Runtime dependencies are as follows:
+
+  * `ffmpeg`
+  * `flac`
+  * `id3v2`
+  * `vorbis-tools`
   * `sox`
 
 ## Usage
@@ -36,33 +46,48 @@ sudo docker build -t autotracks .
 sudo docker run -v /path/to/audio/files:/tracks -v /path/to/save/playlist:/output autotracks
 ```
 
+If Autotracks runs successfully, this will:
+
+- recursively look for audio files under `/path/to/audio/files` and create a corresponding `.meta` file alongside each audio file if it doesn't exist yet;
+- recursively look for `.meta` files under `/path/to/audio/files` and parse tracks metadata from them;
+- create a `playlist.m3u` file under the `/path/to/save/playlist` directory.
+
 ### Method 2: Host
 
 Edit `extract.sh` to reflect the actual paths for `keyfinder-cli` and `bpm-tag` on your system.
 
-Use `pipenv` to enter a correct virtual environment (read Pipfile for dependencies):
+Use `pipenv` to enter a correct virtual environment (read `Pipfile` for Python dependencies):
 
 ```sh
+git clone https://github.com/khannurien/autotracks.git
 cd autotracks
 pipenv install
-pipenv shell
 ```
 
-Call `autotracks` with a playlist name and a directory or a list of files:
+Call Autotracks with a playlist name and a directory or a list of files:
 
 ```sh
-python3 -m src.autotracks "my_playlist" tracks/
+pipenv run python3 -m src.autotracks "my_playlist.m3u" tracks/
 ```
 
 This will create a `my_playlist.m3u` file in the current directory.
 
 If some tracks remain unused or generate errors, their names will be displayed after playlist generation. You can then append them manually to the playlist if you wish.
 
-Note: `autotracks` creates a `.meta` file alongside each track of the list. These files contain the track key and BPM and are not removed after generation, in order to keep audio analysis results cached for further work. They can be safely removed should you not need them anymore.
+Note: Autotracks creates a `.meta` file alongside each track of the list. These files contain the track key and BPM and are not removed after generation, in order to keep audio analysis results cached for further work. They can be safely removed should you not need them anymore.
+
+## Development
+
+Run tests:
+
+```sh
+pipenv install --dev
+pipenv run python3 -m pytest
+```
 
 ## Performance
 
-`autotracks` is a single-threaded application. Using threads to divide the problem would greatly improve performance.
+Autotracks is a single-threaded application. Using threads to divide the problem would greatly improve performance.
 
 On an Intel i5-2400 CPU @ 3.10GHz, sorting a folder containing 317 tracks takes approximately 37 minutes, including audio analysis.
 
