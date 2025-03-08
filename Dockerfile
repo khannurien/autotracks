@@ -1,4 +1,4 @@
-FROM ubuntu:24.10
+FROM python:3.12-slim as base
 
 RUN apt-get update && \
  apt-get install -y \
@@ -13,8 +13,6 @@ RUN apt-get update && \
  libavformat-dev \
  libavutil-dev \
  libfftw3-dev \
- python3 \
- python3-filetype \
  sox
 
 RUN mkdir /build
@@ -38,6 +36,8 @@ RUN git clone https://www.pogo.org.uk/~mark/bpm-tools.git && \
  make && \
  make install && \
  cd ..
+
+RUN python3 -m pip install dotenv filetype pytest
 
 COPY ./src /app/src
 COPY ./extract.sh /app/extract.sh
@@ -134,7 +134,8 @@ ENTRYPOINT ["python3", "-m", "src.autotracks", "/output/playlist", "/tracks"]
 # COPY --from=builder /usr/local/lib/libkeyfinder
 
 # # Install application into container
-# COPY --chown=app:app . .
+# COPY --chown=app:app ./src /app/src
+# COPY --chown=app:app ./extract.sh /app/extract.sh
 
 # # Run autotracks
-# ENTRYPOINT ["python3", "run.py", "/output/playlist", "/tracks"]
+# ENTRYPOINT ["python3", "-m", "src.autotracks", "/output/playlist", "/tracks"]

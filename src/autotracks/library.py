@@ -15,55 +15,8 @@ class Library:
     errors: Dict[str, Error]
 
     def __init__(self, track_filenames: List[str]) -> None:
-        self.tracks, self.neighbours, self.errors = self.load_files(track_filenames)
-
-    def load_files(
-        self, filenames: List[str]
-    ) -> Tuple[
-        Dict[str, Track], Dict[str, List[Tuple[float, Track]]], Dict[str, Error]
-    ]:
-        """
-        Analyse a list of files and add audio tracks to the library.
-
-        Arguments:
-            filenames {List[str]} -- The list of filenames to check for addition to the library.
-
-        Returns:
-            Tuple[Dict[str, Track], Dict[str, List[Tuple[float, Track]]], Dict[str, Error]] -- TODO: improve data structures and docs
-        """
-
-        audio_filenames = [
-            filename for filename in filenames if self.is_audio_file(filename)
-        ]
-
-        tracks: Dict[str, Track] = {}
-        neighbours: Dict[str, List[Tuple[float, Track]]] = {}
-        errors: Dict[str, Error] = {}
-
-        # create all Tracks and initialize their neighbourhoods
-        for filename in audio_filenames:
-            try:
-                track = Track(filename)
-                tracks[filename] = track
-                neighbours[filename] = []
-            except MalformedMetaFileError as error:
-                logging.error(
-                    "✘ Malformed metadata file for {} ({})".format(
-                        error.filename, error.message
-                    )
-                )
-                errors[filename] = error
-
-        # compute all neighbourhoods
-        for _, track in tracks.items():
-            for _, other in tracks.items():
-                if other.is_neighbour(track) and other.filename != track.filename:
-                    score_for = track.score_for(other)
-                    score_from = other.score_for(track)
-                    neighbours[track.filename].append((score_for, other))
-                    neighbours[other.filename].append((score_from, track))
-
-        return tracks, neighbours, errors
+        self.tracks, self.errors = self.load_metadata(track_filenames)
+        self.neighbours = self.find_neighbours(self.tracks)
 
     def is_audio_file(self, filename: str) -> bool:
         """
@@ -84,3 +37,120 @@ class Library:
                     return True
 
         return False
+
+    def load_metadata(
+        self, filenames: List[str]
+    ) -> Tuple[Dict[str, Track], Dict[str, Error]]:
+        """
+        TODO
+
+        Arguments:
+            filenames {List[str]} -- TODO
+
+        Returns:
+            {Tuple[Dict[str, Track], Dict[str, Error]]} -- TODO
+        """
+
+        tracks: Dict[str, Track] = {}
+        errors: Dict[str, Error] = {}
+
+        # ensure all audio files have associated metadata file
+        audio_filenames = [
+            filename for filename in filenames if self.is_audio_file(filename)
+        ]
+        for audio_filename in audio_filenames:
+            metadata_filename = f"{audio_filename}.meta"
+            # check for cached metadata file
+            if not os.path.isfile(metadata_filename):
+                # FIXME: handle errors
+                self.analyse_audio(audio_filename)
+
+        # read all metadata files and create tracks for the library
+        for filename in filenames:
+            file_name, file_extension = os.path.splitext(filename)
+            if file_extension == ".meta":
+                audio_filename = f"{file_name}"
+                metadata_filename = f"{file_name}{file_extension}"
+                try:
+                    bpm, key = self.parse_metadata(metadata_filename)
+                    track = Track(audio_filename, metadata_filename, bpm, key)
+                    tracks[audio_filename] = track
+                except MalformedMetaFileError as error:
+                    logging.error(
+                        "✘ Malformed metadata file for {} ({})".format(
+                            error.filename, error.message
+                        )
+                    )
+                    errors[audio_filename] = error
+
+        return tracks, errors
+
+    def analyse_audio(self, filename: str) -> None:
+        """
+        Start audio analysis with bpm-tools and keyfinder-cli.
+        Metadata will be written to the disk for future use (currently a .meta file next the track's audio file).
+        """
+
+        # TODO: use subprocess
+        # TODO: remove shell script
+        os.system(f'./extract.sh "{filename}"')
+        logging.info(f"Analysed audio for {filename}")
+
+    def parse_metadata(self, metadata_filename: str) -> Tuple[float, str]:
+        """
+        Parse metadata file and return BPM and key.
+
+        Arguments:
+            metadata_filename {str} -- The filename for the metadata associated with the track.
+
+        Returns:
+            Tuple[float, str] -- BPM and key as previously analysed for the track.
+        """
+
+        # the .meta file contains two lines -- first is BPM, second is key
+        try:
+            # TODO: don't read the file one first time, try to parse directly and raise if necessary
+            with open(metadata_filename) as meta:
+                lines_count = sum(1 for _ in meta)
+                if lines_count != 2:
+                    raise MalformedMetaFileError(
+                        metadata_filename,
+                        f"Lines in file: {str(lines_count)} (expected 2)",
+                    )
+
+            with open(metadata_filename) as meta:
+                bpm: float = float(meta.readline().rstrip())
+                key: str = meta.readline().rstrip()
+
+                return bpm, key
+        except OSError as error:
+            raise MalformedMetaFileError(metadata_filename, str(error))
+
+    def find_neighbours(
+        self, tracks: Dict[str, Track]
+    ) -> Dict[str, List[Tuple[float, Track]]]:
+        """
+        TODO
+
+        Arguments:
+            tracks {Dict[str, Track]} -- TODO
+
+        Returns:
+            {Dict[str, List[Tuple[float, Track]]]} -- TODO
+        """
+
+        neighbours: Dict[str, List[Tuple[float, Track]]] = {}
+
+        for _, track in tracks.items():
+            if track.filename not in neighbours:
+                neighbours[track.filename] = []
+            for _, other in tracks.items():
+                if other.filename not in neighbours:
+                    neighbours[other.filename] = []
+                if other.is_neighbour(track) and other.filename != track.filename:
+                    score_for = track.score_for(other)
+                    score_from = other.score_for(track)
+                    neighbours[track.filename].append((score_for, other))
+                    neighbours[other.filename].append((score_from, track))
+
+        return neighbours

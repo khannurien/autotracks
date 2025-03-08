@@ -4,10 +4,13 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
+dotenv = "*"
 filetype = "*"
 
 [dev-packages]
 ruff = "*"
+pytest = "*"
+pytest-datadir = "*"
 
 [requires]
 python_version = "3.12"

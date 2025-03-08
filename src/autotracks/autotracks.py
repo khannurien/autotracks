@@ -1,17 +1,18 @@
 import logging
 import os
 
-from typing import List
+from typing import List, Set
 
 from src.autotracks.error import NotEnoughTracksError
 from src.autotracks.library import Library
 from src.autotracks.playlist import Playlist
 from src.autotracks.strategy import Strategy
+from src.autotracks.track import Track
 
 
 class Autotracks:
     def __init__(self, from_path: List[str]):
-        # recursively add all tracks from the given path in the library
+        # recursively try to add all files from the given path to the library
         track_filenames: List[str] = []
         for item in from_path:
             if os.path.isdir(item):
@@ -40,10 +41,10 @@ class Autotracks:
         Show the tracks that weren't added to the library because of an error during analysis.
         """
 
-        errors_tracks = len(self.library.errors)
-        if errors_tracks > 0:
+        error_count = len(self.library.errors)
+        if error_count > 0:
             logging.error(
-                f"\n{str(errors_tracks)} errors happened with the following tracks:\n"
+                f"\n{str(error_count)} errors happened with the following tracks:\n"
             )
             for filename, _ in self.library.errors.items():
                 logging.error("    ✘ {}".format(filename))
@@ -105,9 +106,9 @@ class Autotracks:
         except OSError:
             logging.error("Could not open file {}.".format(playlist_filename))
 
-    def show_unused_tracks(self, playlist: Playlist) -> None:
+    def get_unused_tracks(self, playlist: Playlist) -> Set[Track]:
         """
-        Show the tracks that weren't added to a specific playlist.
+        Lists and returns the tracks that weren't added to a specific playlist.
 
         Arguments:
             playlist {Playlist} -- An Autotracks playlist to inspect.
@@ -128,3 +129,5 @@ class Autotracks:
                     f"{str(round(track.bpm))}"
                     ")"
                 )
+
+        return unused_tracks

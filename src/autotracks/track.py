@@ -1,11 +1,6 @@
 from __future__ import annotations
 
-import logging
-import os
-
 from typing import Dict, Tuple
-
-from src.autotracks.error import MalformedMetaFileError
 
 
 class Track:
@@ -38,63 +33,13 @@ class Track:
         "12d": ("12m", "11d", "1d"),
     }
 
-    bpm: float
-    key: str
-
-    def __init__(self, filename: str) -> None:
-        self.filename: str = filename
-        self.metadata: str = f"{filename}.meta"
-
-        # check for cached metadata file
-        if not os.path.isfile(self.metadata):
-            # FIXME: handle errors
-            self.analyse_audio()
-
-        # read metadata
-        self.bpm: float
-        self.key: str
-        self.bpm, self.key = self.get_metadata(self.metadata)
-
-    def analyse_audio(self) -> None:
-        """
-        Start audio analysis with bpm-tools and keyfinder-cli.
-        Metadata will be written to the disk for future use (currently a .meta file next the track's audio file).
-        """
-
-        # TODO: use subprocess
-        # TODO: remove shell script
-        os.system(f'./extract.sh "{self.filename}"')
-        logging.info("Analysed audio for {}".format(self.filename))
-
-    def get_metadata(self, meta_filename: str) -> Tuple[float, str]:
-        """
-        Parse metadata file and return BPM and key.
-
-        Arguments:
-            meta_filename {str} -- The filename for the metadata associated with the track.
-
-        Returns:
-            Tuple[float, str] -- BPM and key as previously analysed for the track.
-        """
-
-        # the .meta file contains two lines -- first is BPM, second is key
-        try:
-            # TODO: don't read the file one first time, try to parse directly and raise if necessary
-            with open(meta_filename) as meta:
-                lines_count = sum(1 for _ in meta)
-                if lines_count != 2:
-                    raise MalformedMetaFileError(
-                        self.metadata, f"{str(lines_count)} lines"
-                    )
-
-            with open(meta_filename) as meta:
-                bpm: float = float(meta.readline().rstrip())
-                key: str = meta.readline().rstrip()
-
-                return bpm, key
-        except OSError as error:
-            logging.error("Could not open file {}.".format(meta_filename))
-            raise MalformedMetaFileError(meta_filename, str(error))
+    def __init__(
+        self, audio_filename: str, metadata_filename: str, bpm: float, key: str
+    ) -> None:
+        self.filename: str = audio_filename
+        self.metadata: str = metadata_filename
+        self.bpm: float = bpm
+        self.key: str = key
 
     def neighbouring_keys(self) -> Tuple[str, str, str]:
         """

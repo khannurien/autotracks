@@ -5,14 +5,22 @@ import sys
 
 from datetime import datetime
 
+# from dotenv import dotenv_values
+from typing import Set
+
 from src.autotracks.autotracks import Autotracks
 from src.autotracks.error import NotEnoughTracksError
 from src.autotracks.playlist import Playlist
 from src.autotracks.strategy import Strategy
 from src.autotracks.strategies.dfs import DFS
+from src.autotracks.track import Track
 
 
 def main() -> int:
+    # load environment variables
+    # config = dotenv_values("example.env")
+    # print(config["TRACKS_ABSOLUTE_BASEPATH"])
+
     # initialize argument parser
     parser = argparse.ArgumentParser(
         description=(
@@ -73,7 +81,7 @@ def main() -> int:
     autotracks.write_playlist(selected, args.playlist_name)
 
     # show library tracks that remain unused in the selected playlist
-    autotracks.show_unused_tracks(selected)
+    unused: Set[Track] = autotracks.get_unused_tracks(selected)
 
     # show errors in library
     autotracks.show_errors()
