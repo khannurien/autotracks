@@ -15,7 +15,7 @@ class DFS(Strategy):
         Explore every possible graph for the track list and generate every playlist.
 
         Returns:
-            List[Playlist] -- ...
+            List[Playlist] -- TODO
         """
 
         playlists: List[Playlist] = []

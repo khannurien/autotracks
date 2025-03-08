@@ -11,8 +11,8 @@ from src.autotracks.track import Track
 
 
 @pytest.fixture
-def autotracks(datadir: str) -> Autotracks:
-    return Autotracks([datadir])
+def autotracks(shared_datadir: str) -> Autotracks:
+    return Autotracks([shared_datadir])
 
 
 @pytest.fixture
@@ -31,6 +31,11 @@ def unused(autotracks: Autotracks, selected: Playlist) -> Set[Track]:
     return autotracks.get_unused_tracks(selected)
 
 
+@pytest.fixture
+def score(autotracks: Autotracks, strategy: Strategy, selected: Playlist) -> float:
+    return autotracks.score_playlist(strategy, selected)
+
+
 def test_playlist_length(selected: Playlist):
     assert len(selected.tracks) == 4
 
@@ -47,3 +52,7 @@ def test_playlist_unused(unused: Set[Track]):
 
     assert len(filenames) == 1
     assert "4.flac" in filenames
+
+
+def test_playlist_score(score: float):
+    assert score == 4.0
