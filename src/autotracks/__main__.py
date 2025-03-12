@@ -2,14 +2,15 @@ import argparse
 import logging
 import os
 import sys
+import time
 
 from datetime import datetime
+from typing import Set, Tuple
 
 # from dotenv import dotenv_values
-from typing import Set
 
 from src.autotracks.autotracks import Autotracks
-from src.autotracks.error import NotEnoughTracksError
+from src.autotracks.error import Error, NotEnoughTracksError
 from src.autotracks.playlist import Playlist
 from src.autotracks.strategy import Strategy
 from src.autotracks.strategies.dfs import DFS
@@ -48,11 +49,11 @@ def main() -> int:
     file_handler = logging.FileHandler(f"log/{run_time}.log")
     file_handler.setLevel(logging.DEBUG)
     console_handler = logging.StreamHandler(sys.stdout)
-    console_handler.setLevel(logging.ERROR)
+    console_handler.setLevel(logging.INFO)
 
     logging.basicConfig(
         level=logging.DEBUG,
-        format="%(levelname)s [%(funcName)18s() ] %(message)s",
+        format="%(levelname)7s [%(funcName)18s] %(message)s",
         handlers=[file_handler, console_handler],
     )
 
@@ -61,14 +62,18 @@ def main() -> int:
         autotracks = Autotracks(args.filenames)
     except NotEnoughTracksError as error:
         logging.error(error.message)
-        sys.exit(2)
+        sys.exit(os.EX_DATAERR)
 
     # select strategy
     # TODO: move to program argument
     strategy: Strategy = DFS()
 
-    # generate playlists
+    # generate playlists and measure elapsed time
+    start: float = time.perf_counter()
     playlists = autotracks.generate_playlists(strategy)
+    end: float = time.perf_counter()
+    elapsed = end - start
+    logging.info(f"Elapsed time (seconds): {elapsed}")
 
     # select playlist
     selected: Playlist = autotracks.select_playlist(strategy, playlists)
@@ -82,9 +87,15 @@ def main() -> int:
 
     # show library tracks that remain unused in the selected playlist
     unused: Set[Track] = autotracks.get_unused_tracks(selected)
+    for track in unused:
+        logging.warning(
+            f"⚠ Unused track: {track.filename} ({track.key} @ {round(track.bpm)})"
+        )
 
-    # show errors in library
-    autotracks.show_errors()
+    # show files that produced errors during analysis
+    errors: Set[Tuple[str, Error]] = autotracks.get_errors()
+    for filename, error in errors:
+        logging.error(f"✘ Error with file: {filename} ({error.message})")
 
     return os.EX_OK
 

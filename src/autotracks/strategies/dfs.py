@@ -21,8 +21,8 @@ class DFS(Strategy):
         playlists: List[Playlist] = []
 
         for first_filename, first_track in library.tracks.items():
-            logging.info("\n⚙   Building and comparing playlists...")
-            logging.info(f"  › Starting with: {first_filename}\n")
+            logging.debug("⚙ Building and comparing playlists...")
+            logging.debug(f"  › Starting with: {first_filename}")
 
             all_last_tracks = [
                 (filename, track)
@@ -30,14 +30,14 @@ class DFS(Strategy):
                 if filename != first_filename
             ]
             for last_filename, last_track in all_last_tracks:
-                logging.info(f"  › Ending with: {last_filename}")
+                logging.debug(f"    › Ending with: {last_filename}")
 
                 playlist = self.create_playlist(library, first_track, last_track)
                 if not playlist.is_empty():
                     playlists.append(playlist)
-                    logging.info(f"    » {str(len(playlist.tracks))} tracks.\n")
+                    logging.debug(f"      » {len(playlist.tracks)} tracks.")
                 else:
-                    logging.info("    » No possible playlist in this case.\n")
+                    logging.debug("      » No possible playlist in this case.")
 
         return playlists
 

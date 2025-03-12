@@ -76,11 +76,6 @@ class Library:
                     track = Track(audio_filename, metadata_filename, bpm, key)
                     tracks[audio_filename] = track
                 except MalformedMetaFileError as error:
-                    logging.error(
-                        "✘ Malformed metadata file for {} ({})".format(
-                            error.filename, error.message
-                        )
-                    )
                     errors[audio_filename] = error
 
         return tracks, errors
@@ -94,7 +89,7 @@ class Library:
         # TODO: use subprocess
         # TODO: remove shell script
         os.system(f'./extract.sh "{filename}"')
-        logging.info(f"Analysed audio for {filename}")
+        logging.info(f"Analysed audio for file: {filename}")
 
     def parse_metadata(self, metadata_filename: str) -> Tuple[float, str]:
         """
@@ -114,8 +109,7 @@ class Library:
                 lines_count = sum(1 for _ in meta)
                 if lines_count != 2:
                     raise MalformedMetaFileError(
-                        metadata_filename,
-                        f"Lines in file: {str(lines_count)} (expected 2)",
+                        f"Lines in metadata file: {lines_count} (expected 2)",
                     )
 
             with open(metadata_filename) as meta:
@@ -124,7 +118,7 @@ class Library:
 
                 return bpm, key
         except OSError as error:
-            raise MalformedMetaFileError(metadata_filename, str(error))
+            raise MalformedMetaFileError(str(error))
 
     def find_neighbours(
         self, tracks: Dict[str, Track]

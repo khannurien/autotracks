@@ -1,6 +1,6 @@
 # autotracks
 
-🎶 Generate automatic playlists according to your tracks' mood and groove
+🎶 Generate automatic playlists that follow your tracks' mood and groove
 
 ## Dependencies
 

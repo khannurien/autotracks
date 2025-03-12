@@ -1,9 +1,9 @@
 import logging
 import os
 
-from typing import List, Set
+from typing import List, Set, Tuple
 
-from src.autotracks.error import NotEnoughTracksError
+from src.autotracks.error import Error, NotEnoughTracksError
 from src.autotracks.library import Library
 from src.autotracks.playlist import Playlist
 from src.autotracks.strategy import Strategy
@@ -11,6 +11,8 @@ from src.autotracks.track import Track
 
 
 class Autotracks:
+    library: Library
+
     def __init__(self, from_path: List[str]):
         # recursively try to add all files from the given path to the library
         track_filenames: List[str] = []
@@ -25,29 +27,15 @@ class Autotracks:
             else:
                 track_filenames.append(item)
 
-        if track_filenames:
-            self.library = Library(track_filenames)
-
-            if len(self.library.tracks) < 2:
-                logging.error(f"Not enough tracks in list for path: {from_path}")
-                raise NotEnoughTracksError(
-                    "Less than two tracks could be added to the library."
-                )
-        else:
+        if not track_filenames:
             raise NotEnoughTracksError("No tracks found in list.")
 
-    def show_errors(self) -> None:
-        """
-        Show the tracks that weren't added to the library because of an error during analysis.
-        """
+        self.library = Library(track_filenames)
 
-        error_count = len(self.library.errors)
-        if error_count > 0:
-            logging.error(
-                f"\n{str(error_count)} errors happened with the following tracks:\n"
+        if len(self.library.tracks) < 2:
+            raise NotEnoughTracksError(
+                "Less than two tracks could be added to the library from path: {from_path}"
             )
-            for filename, _ in self.library.errors.items():
-                logging.error("    ✘ {}".format(filename))
 
     def generate_playlists(self, strategy: Strategy) -> List[Playlist]:
         """
@@ -100,11 +88,10 @@ class Autotracks:
         try:
             with open(playlist_filename, mode="w") as playlist_file:
                 for track in playlist.tracks:
-                    playlist_file.write(
-                        f"# {track.key} @ {str(round(track.bpm))}\n{track.filename}\n"
-                    )
+                    print(f"# {track.key} @ {round(track.bpm)}", file=playlist_file)
+                    print(f"{track.filename}", file=playlist_file)
         except OSError:
-            logging.error("Could not open file {}.".format(playlist_filename))
+            logging.error(f"Could not open playlist file: {playlist_filename}")
 
     def get_unused_tracks(self, playlist: Playlist) -> Set[Track]:
         """
@@ -117,17 +104,15 @@ class Autotracks:
         unused_tracks = set([track for _, track in self.library.tracks.items()]) - set(
             playlist.tracks
         )
-        if unused_tracks:
-            logging.warning(f"\n {str(len(unused_tracks))} unused tracks:\n")
-            for track in unused_tracks:
-                logging.warning(
-                    "    » "
-                    f"{track.filename}"
-                    " ("
-                    f"{str(track.key)}"
-                    " @ "
-                    f"{str(round(track.bpm))}"
-                    ")"
-                )
 
         return unused_tracks
+
+    def get_errors(self) -> Set[Tuple[str, Error]]:
+        """
+        Return the errors that happened during audio analysis.
+
+        Returns:
+            {Tuple[str, Error]} -- The filename and associated error.
+        """
+
+        return set(self.library.errors.items())
