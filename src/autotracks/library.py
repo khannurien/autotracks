@@ -5,7 +5,7 @@ import subprocess
 from concurrent.futures import Future, ThreadPoolExecutor, as_completed
 from typing import Dict, List, Tuple
 
-import filetype  # type: ignore
+import magic
 
 from src.autotracks.error import Error, AudioAnalysisError, MalformedMetaFileError
 from src.autotracks.track import Track
@@ -36,11 +36,10 @@ class Library:
         """
 
         if os.path.exists(filename):
-            fileinfo = filetype.guess(filename)  # type: ignore
+            mime_type: str = magic.from_file(filename, mime=True)
 
-            if fileinfo:
-                if "audio" in fileinfo.mime:  # type: ignore
-                    return True
+            if mime_type.startswith("audio"):
+                return True
 
         return False
 
@@ -108,15 +107,15 @@ class Library:
         try:
             bpm: float = float(
                 subprocess.check_output(
-                    f"{self.config['BPM_TAG']}"
-                    f" -nf {filename} 2>&1 /dev/null"
+                    f'{self.config["BPM_TAG"]}'
+                    f' -nf "{filename}" 2>&1 /dev/null'
                     " | grep \"BPM\" | tail -n 1 | awk -F \": \" '{print $NF}' | cut -d ' ' -f 1",
                     shell=True,
                     text=True,
                 ).strip()
             )
             key: str = subprocess.check_output(
-                f"{self.config['KEYFINDER_CLI']} -n openkey {filename}",
+                f'{self.config["KEYFINDER_CLI"]} -n openkey "{filename}"',
                 shell=True,
                 text=True,
             ).strip()

@@ -37,7 +37,7 @@ RUN git clone https://www.pogo.org.uk/~mark/bpm-tools.git && \
  make install && \
  cd ..
 
-RUN python3 -m pip install dotenv filetype pytest ruff
+RUN python3 -m pip install dotenv filetype pytest pytest-datadir python-magic ruff
 
 COPY ./src /app/src
 
