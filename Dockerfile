@@ -40,7 +40,6 @@ RUN git clone https://www.pogo.org.uk/~mark/bpm-tools.git && \
 RUN python3 -m pip install dotenv filetype pytest ruff
 
 COPY ./src /app/src
-COPY ./extract.sh /app/extract.sh
 
 WORKDIR /app
 
@@ -135,7 +134,6 @@ ENTRYPOINT ["python3", "-m", "src.autotracks", "/output/playlist.m3u", "/tracks"
 
 # # Install application into container
 # COPY --chown=app:app ./src /app/src
-# COPY --chown=app:app ./extract.sh /app/extract.sh
 
 # # Run autotracks
 # ENTRYPOINT ["python3", "-m", "src.autotracks", "/output/playlist", "/tracks"]

@@ -1,7 +1,7 @@
 import logging
 import os
 
-from typing import List, Set, Tuple
+from typing import Dict, List, Set, Tuple
 
 from src.autotracks.error import Error, NotEnoughTracksError
 from src.autotracks.library import Library
@@ -13,7 +13,7 @@ from src.autotracks.track import Track
 class Autotracks:
     library: Library
 
-    def __init__(self, from_path: List[str]):
+    def __init__(self, config: Dict[str, str | None], from_path: List[str]):
         # recursively try to add all files from the given path to the library
         track_filenames: List[str] = []
         for item in from_path:
@@ -30,11 +30,11 @@ class Autotracks:
         if not track_filenames:
             raise NotEnoughTracksError("No tracks found in list.")
 
-        self.library = Library(track_filenames)
+        self.library = Library(config, track_filenames)
 
         if len(self.library.tracks) < 2:
             raise NotEnoughTracksError(
-                "Less than two tracks could be added to the library from path: {from_path}"
+                f"Less than two tracks could be added to the library from path: {from_path}"
             )
 
     def generate_playlists(self, strategy: Strategy) -> List[Playlist]:

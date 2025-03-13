@@ -5,9 +5,9 @@ import sys
 import time
 
 from datetime import datetime
-from typing import Set, Tuple
+from typing import Dict, Set, Tuple
 
-# from dotenv import dotenv_values
+from dotenv import dotenv_values
 
 from src.autotracks.autotracks import Autotracks
 from src.autotracks.error import Error, NotEnoughTracksError
@@ -18,10 +18,6 @@ from src.autotracks.track import Track
 
 
 def main() -> int:
-    # load environment variables
-    # config = dotenv_values("example.env")
-    # print(config["TRACKS_ABSOLUTE_BASEPATH"])
-
     # initialize argument parser
     parser = argparse.ArgumentParser(
         description=(
@@ -57,9 +53,21 @@ def main() -> int:
         handlers=[file_handler, console_handler],
     )
 
+    # load environment variables
+    # environment variables > .env file > default values
+    default_values = {
+        "BPM_TAG": "bpm-tag",
+        "KEYFINDER_CLI": "keyfinder-cli",
+    }
+    config: Dict[str, str | None] = {
+        **default_values,
+        **dotenv_values(".env"),
+        **{k: os.environ[k] for k in default_values if k in os.environ},
+    }
+
     # initialize library
     try:
-        autotracks = Autotracks(args.filenames)
+        autotracks = Autotracks(config, args.filenames)
     except NotEnoughTracksError as error:
         logging.error(error.message)
         sys.exit(os.EX_DATAERR)

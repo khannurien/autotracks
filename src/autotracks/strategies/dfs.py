@@ -152,6 +152,7 @@ class DFS(Strategy):
             {List[(int, Track)]} -- A list of tracks in the neighbourhood, along with their scores.
         """
 
+        # FIXME: allow bigger steps over neighbourhood
         return library.neighbours[track.filename]
 
     def select_playlist(self, playlists: List[Playlist]) -> Playlist:

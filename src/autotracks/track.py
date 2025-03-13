@@ -38,6 +38,7 @@ class Track:
     ) -> None:
         self.filename: str = audio_filename
         self.metadata: str = metadata_filename
+        # TODO: add track length
         self.bpm: float = bpm
         self.key: str = key
 

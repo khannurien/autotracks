@@ -54,7 +54,8 @@ If Autotracks runs successfully, this will:
 
 ### Method 2: Host
 
-Edit `extract.sh` to reflect the actual paths for `keyfinder-cli` and `bpm-tag` on your system.
+Environment variables can be used to set custom paths for `keyfinder-cli` and `bpm-tag` if necessary.
+Copy `example.env` to `.env` and edit it to reflect your system's configuration, or set and export the variables from your shell before launching Autotracks.
 
 Use `pipenv` to enter a correct virtual environment (read `Pipfile` for Python dependencies):
 
@@ -84,11 +85,3 @@ Run tests:
 pipenv install --dev
 pipenv run python3 -m pytest
 ```
-
-## Performance
-
-Autotracks is a single-threaded application. Using threads to divide the problem would greatly improve performance.
-
-On an Intel i5-2400 CPU @ 3.10GHz, sorting a folder containing 317 tracks takes approximately 37 minutes, including audio analysis.
-
-In that test case, only one track remained unused, and 3 produced errors (raised by `keyfinder-cli` for reasons yet unknown).

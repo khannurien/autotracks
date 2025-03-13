@@ -7,6 +7,11 @@ class Error(ABC, Exception):
     pass
 
 
+class AudioAnalysisError(Error):
+    def __init__(self, message: str):
+        self.message = message
+
+
 class MalformedMetaFileError(Error):
     def __init__(self, message: str):
         self.message = message

@@ -1,7 +1,7 @@
 import os
 import pytest
 
-from typing import List, Set
+from typing import Dict, List, Set
 
 from src.autotracks.autotracks import Autotracks
 from src.autotracks.playlist import Playlist
@@ -11,8 +11,8 @@ from src.autotracks.track import Track
 
 
 @pytest.fixture
-def autotracks(shared_datadir: str) -> Autotracks:
-    return Autotracks([shared_datadir])
+def autotracks(config: Dict[str, str | None], shared_datadir: str) -> Autotracks:
+    return Autotracks(config, [shared_datadir])
 
 
 @pytest.fixture
