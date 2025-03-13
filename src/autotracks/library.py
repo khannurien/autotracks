@@ -87,13 +87,15 @@ class Library:
             file_name, file_extension = os.path.splitext(filename)
             if file_extension == ".meta":
                 audio_filename = f"{file_name}"
-                metadata_filename = f"{file_name}{file_extension}"
-                try:
-                    bpm, key = self.parse_metadata(metadata_filename)
-                    track = Track(audio_filename, metadata_filename, bpm, key)
-                    tracks[audio_filename] = track
-                except MalformedMetaFileError as error:
-                    errors[audio_filename] = error
+
+                if audio_filename not in tracks:
+                    metadata_filename = f"{file_name}{file_extension}"
+                    try:
+                        bpm, key = self.parse_metadata(metadata_filename)
+                        track = Track(audio_filename, metadata_filename, bpm, key)
+                        tracks[audio_filename] = track
+                    except MalformedMetaFileError as error:
+                        errors[audio_filename] = error
 
         return tracks, errors
 
@@ -128,7 +130,7 @@ class Library:
                 f"Analysed audio for file: {filename} (got BPM={bpm}; key={key})"
             )
 
-            return float(bpm), key
+            return bpm, key
         except ValueError as error:
             raise AudioAnalysisError(
                 f"Audio analysis error for file: {filename} ({error})"
@@ -146,22 +148,20 @@ class Library:
         """
 
         # the .meta file contains two lines -- first is BPM, second is key
-        try:
-            # TODO: don't read the file twice, try to parse directly and raise if necessary
-            with open(metadata_filename) as meta:
-                lines_count = sum(1 for _ in meta)
-                if lines_count != 2:
-                    raise MalformedMetaFileError(
-                        f"Lines in metadata file: {lines_count} (expected 2)",
-                    )
+        with open(metadata_filename) as meta:
+            lines: List[str] = [line.strip() for line in meta.readlines()]
 
-            with open(metadata_filename) as meta:
-                bpm: float = float(meta.readline().rstrip())
-                key: str = meta.readline().rstrip()
+            try:
+                bpm: float = float(lines[0])
+                key: str = lines[1]
 
                 return bpm, key
-        except ValueError as error:
-            raise MalformedMetaFileError(str(error))
+            except IndexError as error:
+                raise MalformedMetaFileError(
+                    f"Lines in metadata file: {len(lines)} (expected 2)",
+                )
+            except ValueError as error:
+                raise MalformedMetaFileError(str(error))
 
     def find_neighbours(
         self, tracks: Dict[str, Track]

@@ -6,25 +6,23 @@
 
 You will need to build [bpm-tools](https://www.pogo.org.uk/~mark/bpm-tools/), [libkeyfinder](https://github.com/mixxxdj/libKeyFinder) and [keyfinder-cli](https://github.com/EvanPurkhiser/keyfinder-cli).
 
-Here is a list of the dependencies that you will require to build Autotracks and its dependencies:
+Here is a list of the dependencies that are required to build Autotracks and its dependencies:
 
   * `build-essential`
   * `cmake`
-  * `ffmpeg`
   * `git`
   * `libfftw3-dev`
   * `libavutil-dev`
   * `libavcodec-dev`
   * `libavformat-dev`
-  * `sox`
 
 Runtime dependencies are as follows:
 
   * `ffmpeg`
   * `flac`
   * `id3v2`
-  * `vorbis-tools`
   * `sox`
+  * `vorbis-tools`
 
 ## Usage
 
@@ -54,7 +52,7 @@ If Autotracks runs successfully, this will:
 
 ### Method 2: Host
 
-Environment variables can be used to set custom paths for `keyfinder-cli` and `bpm-tag` if necessary.
+Environment variables can be used to set custom paths to `keyfinder-cli` and `bpm-tag` if necessary.
 Copy `example.env` to `.env` and edit it to reflect your system's configuration, or set and export the variables from your shell before launching Autotracks.
 
 Use `pipenv` to enter a correct virtual environment (read `Pipfile` for Python dependencies):
