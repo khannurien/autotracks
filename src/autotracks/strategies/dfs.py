@@ -1,7 +1,7 @@
 import logging
 import math
 
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Set, Tuple
 
 from src.autotracks.library import Library
 from src.autotracks.playlist import Playlist
@@ -14,8 +14,12 @@ class DFS(Strategy):
         """
         Explore every possible graph for the track list and generate every playlist.
 
+        Arguments:
+            library {Library} -- The considered library of tracks.
+
         Returns:
-            List[Playlist] -- TODO
+            List[Playlist] -- A list of all possible playlists that have been discovered
+            in the provided library.
         """
 
         playlists: List[Playlist] = []
@@ -43,7 +47,8 @@ class DFS(Strategy):
 
     def create_playlist(self, library: Library, first: Track, last: Track) -> Playlist:
         """
-        Discover the library's graph by drawing every path betweens tracks, starting from the provided first track. Keep the longest path and save it as a playlist.
+        Discover the library's graph by drawing every path betweens tracks, starting
+        from the provided first track. Keep the longest path and save it as a playlist.
 
         Arguments:
             library {Library} -- The considered library of tracks.
@@ -51,13 +56,14 @@ class DFS(Strategy):
             last {Track} -- A track object that will be the last track in the playlist.
 
         Returns:
-            {Playlist} -- The resulting playlist for the longest path from the provided first track to the provided last track.
+            {Playlist} -- The resulting playlist for the longest path from the provided
+            first track to the provided last track.
         """
 
-        # discover paths between the first and the last tracks
-        graph: Dict[str, List[Tuple[float, Track]]] = {}
-        # FIXME: make the function tail recursive
-        self.discover_graph(library, first, graph)
+        # discover all paths between the first and the last tracks
+        graph: Dict[str, List[Tuple[float, Track]]] = self.discover_graph(
+            library, first
+        )
 
         # create playlists from paths in the graph
         paths: List[List[Track]] = self.get_paths(first, last, graph)
@@ -70,22 +76,36 @@ class DFS(Strategy):
         self,
         library: Library,
         first: Track,
-        graph: Dict[str, List[Tuple[float, Track]]],
-    ) -> None:
+        visited: Optional[Set[str]] = None,
+    ) -> Dict[str, List[Tuple[float, Track]]]:
         """
         Represent the "possible playlists problem" as a graph problem: tracks are nodes
         and edges connect tracks in the same neighbourhood.
 
         Arguments:
-            first {Track} -- A Track object.
-            graph {Dict} -- A dictionary which will represent the nodes and edges.
+            library {Library} -- The library containing all tracks and their neighbourhoods.
+            first {Track} -- The starting track from which to build the graph.
+            visited {Optional[Set[str]]} -- Set of track filenames already visited to
+            prevent cycles. Can be None for initial calls.
+
+        Returns:
+            {Dict} -- A dictionary representing the graph, where each key is a track filename
+            and the value is a list of tuples (score, successor track) representing possible
+            next tracks in playlists.
         """
 
+        graph: Dict[str, List[Tuple[float, Track]]] = {}
         graph[first.filename] = self.find_successors(library, first)
 
-        for _, next in graph[first.filename]:
-            if next.filename not in graph.keys():
-                self.discover_graph(library, next, graph)
+        # include current track in the visited set
+        history = (visited or set()) | {first.filename}
+
+        for _, next_track in graph[first.filename]:
+            if next_track.filename not in history:
+                subgraph = self.discover_graph(library, next_track, history)
+                graph.update(subgraph)
+
+        return graph
 
     def get_paths(
         self,
@@ -95,8 +115,7 @@ class DFS(Strategy):
         path: List[Track] = [],
     ) -> List[List[Track]]:
         """
-        Recursive Depth First Search to get all paths from a starting track to an ending
-        track. Implementation courtesy of https://www.python.org/doc/essays/graphs/ :-)
+        Recursive Depth First Search to get all paths from a starting track to an ending track.
 
         Arguments:
             first {Track} -- A track object that will be the first track in the playlist.
@@ -126,6 +145,7 @@ class DFS(Strategy):
         best_score, best_track = math.inf, None
 
         # use successors' score to determine which path to follow
+        # the lower the better
         for score, track in graph[first_track.filename]:
             if track not in path:
                 if score < best_score:

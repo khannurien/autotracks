@@ -36,7 +36,7 @@ class Library:
         """
 
         if os.path.exists(filename):
-            mime_type: str = magic.from_file(filename, mime=True)
+            mime_type: str = magic.from_file(filename, mime=True)  # type: ignore
 
             if mime_type.startswith("audio"):
                 return True
@@ -102,12 +102,18 @@ class Library:
         """
         Start audio analysis with bpm-tag and keyfinder-cli.
         Write metadata to disk for future use in a .meta file next the track's audio file.
+
+        Arguments:
+            filename {str} -- The path to an audio file.
+
+        Returns:
+            {Tuple[float, str]} -- A tuple containing the track's BPM and key.
         """
 
         try:
             bpm: float = float(
                 subprocess.check_output(
-                    f'{self.config["BPM_TAG"]}'
+                    f"{self.config['BPM_TAG']}"
                     f' -nf "{filename}" 2>&1 /dev/null'
                     " | grep \"BPM\" | tail -n 1 | awk -F \": \" '{print $NF}' | cut -d ' ' -f 1",
                     shell=True,
@@ -155,7 +161,7 @@ class Library:
                 key: str = lines[1]
 
                 return bpm, key
-            except IndexError as error:
+            except IndexError:
                 raise MalformedMetaFileError(
                     f"Lines in metadata file: {len(lines)} (expected 2)",
                 )
