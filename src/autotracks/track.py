@@ -38,35 +38,3 @@ class Track:
             self.metadata.key == other.metadata.key
             or other.metadata.key in compatible_keys(self.metadata.key)
         )
-
-    # TODO: Distance score for the key
-    # def score_for_key(self, other: Track) -> float:
-    #     # count how many steps are needed between the two tracks?
-
-    # TODO: Distance score for the BPM
-    # def score_for_bpm(self, other: Track) -> float:
-
-    # TODO: Composite score
-    # def score_for(self, other: Track) -> float
-
-    def score_for(self, other: Track) -> float:
-        """
-        Compute a score for another track: the closer the BPM, the lower the score.
-
-        Arguments:
-            other {Track} -- Another track to compare BPM with.
-
-        Returns:
-            float -- A distance score (the lower, the better).
-        """
-
-        # TODO: check with mod to consider half-time BPM
-        # fastest, slowest = min max...
-        # div, mod = divmod...
-
-        # if div >= 1:
-        #     return...
-
-        # TODO: generally find a better way to score tracks
-
-        return abs(self.metadata.bpm - other.metadata.bpm) / 100

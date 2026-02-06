@@ -6,6 +6,7 @@ from typing import Dict, List, Set, Tuple
 from src.autotracks.error import Error, NotEnoughTracksError
 from src.autotracks.library import Library
 from src.autotracks.playlist import Playlist
+from src.autotracks.scorer import Scorer
 from src.autotracks.strategy import Strategy
 from src.autotracks.track import Track
 
@@ -63,15 +64,15 @@ class Autotracks:
 
         return strategy.select_playlist(playlists)
 
-    def score_playlist(self, strategy: Strategy, playlist: Playlist) -> float:
+    def score_playlist(self, scorer: Scorer, playlist: Playlist) -> float:
         """
-        Return the score of a playlist according to a given strategy.
+        Return the score of a playlist according to a given Scorer.
 
         Arguments:
-            strategy {Strategy} -- A concrete class that implements the strategy inferance.
+            scorer {Scorer} -- The scorer to use for evaluating transitions.
             playlist {Playlist} -- A previously generated valid playlist.
         """
-        return strategy.score_playlist(playlist)
+        return scorer.score_playlist(playlist)
 
     def write_playlist(self, playlist: Playlist, playlist_filename: str) -> None:
         """

@@ -36,7 +36,7 @@ class DFS(Strategy):
             for last_filename, last_track in all_last_tracks:
                 logging.debug(f"    › Ending with: {last_filename}")
 
-                playlist = self.create_playlist(library, first_track, last_track)
+                playlist = self._create_playlist(library, first_track, last_track)
                 if not playlist.is_empty():
                     playlists.append(playlist)
                     logging.debug(f"      » {len(playlist.tracks)} tracks.")
@@ -45,7 +45,20 @@ class DFS(Strategy):
 
         return playlists
 
-    def create_playlist(self, library: Library, first: Track, last: Track) -> Playlist:
+    def select_playlist(self, playlists: List[Playlist]) -> Playlist:
+        """
+        Naive strategy that selects the longest playlist across the set.
+
+        Returns:
+            {Playlist} -- The longest playlist from the list, or an empty playlist is the list is empty.
+        """
+
+        return next(
+            iter(sorted(playlists, key=self.scorer.score_playlist, reverse=True)),
+            Playlist([]),
+        )
+
+    def _create_playlist(self, library: Library, first: Track, last: Track) -> Playlist:
         """
         Discover the library's graph by drawing every path betweens tracks, starting
         from the provided first track. Keep the longest path and save it as a playlist.
@@ -61,18 +74,18 @@ class DFS(Strategy):
         """
 
         # discover all paths between the first and the last tracks
-        graph: Dict[str, List[Tuple[float, Track]]] = self.discover_graph(
+        graph: Dict[str, List[Tuple[float, Track]]] = self._discover_graph(
             library, first
         )
 
         # create playlists from paths in the graph
-        paths: List[List[Track]] = self.get_paths(first, last, graph)
+        paths: List[List[Track]] = self._get_paths(first, last, graph)
         playlists: List[Playlist] = [Playlist(path_tracks) for path_tracks in paths]
 
         # only keep the best scoring playlist
         return self.select_playlist(playlists)
 
-    def discover_graph(
+    def _discover_graph(
         self,
         library: Library,
         first: Track,
@@ -95,19 +108,19 @@ class DFS(Strategy):
         """
 
         graph: Dict[str, List[Tuple[float, Track]]] = {}
-        graph[first.filename] = self.find_successors(library, first)
+        graph[first.filename] = self._find_successors(library, first)
 
         # include current track in the visited set
         history = (visited or set()) | {first.filename}
 
         for _, next_track in graph[first.filename]:
             if next_track.filename not in history:
-                subgraph = self.discover_graph(library, next_track, history)
+                subgraph = self._discover_graph(library, next_track, history)
                 graph.update(subgraph)
 
         return graph
 
-    def get_paths(
+    def _get_paths(
         self,
         first_track: Track,
         last_track: Track,
@@ -152,46 +165,31 @@ class DFS(Strategy):
                     best_score, best_track = score, track
 
         if best_track:
-            next_paths = self.get_paths(best_track, last_track, graph, path)
+            next_paths = self._get_paths(best_track, last_track, graph, path)
 
             for new_path in next_paths:
                 paths.append(new_path)
 
         return paths
 
-    def find_successors(
+    def _find_successors(
         self, library: Library, track: Track
     ) -> List[Tuple[float, Track]]:
         """
-        Get the neighbours of a track.
+        Find all valid successor tracks with their transition scores.
 
         Arguments:
-            track {Track} -- A track object.
+            library {Library} -- The library containing all tracks and neighbourhoods.
+            track {Track} -- The current considered track.
 
         Returns:
-            {List[(int, Track)]} -- A list of tracks in the neighbourhood, along with their scores.
+            {List[(float, Track)]} -- A list of tracks in the neighbourhood, along with their scores.
         """
 
-        # FIXME: allow bigger steps over neighbourhood
-        return library.neighbours[track.filename]
+        successors: List[Tuple[float, Track]] = []
 
-    def select_playlist(self, playlists: List[Playlist]) -> Playlist:
-        """
-        Naive strategy that selects the longest playlist across the set.
+        for neighbour in library.neighbours[track.filename]:
+            score = self.scorer.score_transition(track, neighbour)
+            successors.append((score, neighbour))
 
-        Returns:
-            {Playlist} -- The longest playlist from the list, or an empty playlist is the list is empty.
-        """
-
-        return next(
-            iter(sorted(playlists, key=self.score_playlist, reverse=True)), Playlist([])
-        )
-
-    def score_playlist(self, playlist: Playlist) -> float:
-        """
-        Naive scoring system: the longer the playlist, the higher its score.
-
-        Returns:
-            {float} -- The number of tracks in the playlist.
-        """
-        return float(len(playlist.tracks))
+        return successors

@@ -5,6 +5,8 @@ from typing import Dict, List, Set
 
 from src.autotracks.autotracks import Autotracks
 from src.autotracks.playlist import Playlist
+from src.autotracks.scorer import Scorer
+from src.autotracks.scorers.bybpm import ByBPM
 from src.autotracks.strategy import Strategy
 from src.autotracks.strategies.empty import Empty
 from src.autotracks.track import Track
@@ -16,8 +18,13 @@ def autotracks(config: Dict[str, str | None], shared_datadir: str) -> Autotracks
 
 
 @pytest.fixture
-def strategy() -> Strategy:
-    return Empty()
+def scorer() -> Scorer:
+    return ByBPM()
+
+
+@pytest.fixture
+def strategy(scorer: Scorer) -> Strategy:
+    return Empty(scorer)
 
 
 @pytest.fixture

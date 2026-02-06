@@ -51,13 +51,13 @@ class Library:
         config {Dict[str, str | None]} -- Configuration including paths to analysis tools.
         tracks {Dict[str, Track]} -- Successfully loaded tracks, keyed by audio filename.
         errors {Dict[str, Error]} -- Errors encountered during loading, keyed by filename.
-        neighbours {Dict[str, List[Tuple[float, Track]]]} -- Compatible tracks for each track.
+        neighbours {Dict[str, List[Track]]} -- Compatible tracks for each track.
     """
 
     config: Dict[str, str | None]
     tracks: Dict[str, Track]
     errors: Dict[str, Error]
-    neighbours: Dict[str, List[Tuple[float, Track]]]
+    neighbours: Dict[str, List[Track]]
 
     def __init__(
         self, config: Dict[str, str | None], track_filenames: List[str]
@@ -277,7 +277,6 @@ class Library:
     def _analyse_oldskool(self, filename: str) -> OldSkoolTrackData:
         """
         Start audio analysis with bpm-tag and keyfinder-cli.
-        Write metadata to disk for future use in a .meta file next the track's audio file.
 
         Arguments:
             filename {str} -- The path to an audio file.
@@ -414,30 +413,23 @@ class Library:
             except ValueError as error:
                 raise MalformedMetaFileError(str(error))
 
-    def find_neighbours(
-        self, tracks: Dict[str, Track]
-    ) -> Dict[str, List[Tuple[float, Track]]]:
+    def find_neighbours(self, tracks: Dict[str, Track]) -> Dict[str, List[Track]]:
         """
         Find harmonically compatible tracks for each track in the library.
 
         Arguments:
-            tracks {Dict[str, Track]} -- All tracks to analyse.
+            tracks {Dict[str, Track]} -- All tracks to consider.
 
         Returns:
-            Dict[str, List[Tuple[float, Track]]] -- For each track filename,
-                a list of (score, compatible_track) tuples.
+            Dict[str, List[Track]] -- For each track filename, a list of harmonically compatible tracks.
         """
-        neighbours: Dict[str, List[Tuple[float, Track]]] = {
-            filename: [] for filename in tracks
-        }
+        neighbours: Dict[str, List[Track]] = {filename: [] for filename in tracks}
 
         track_list = list(tracks.values())
         for i, track in enumerate(track_list):
             for other in track_list[i + 1 :]:
                 if track.is_neighbour(other):
-                    score_for = track.score_for(other)
-                    score_from = other.score_for(track)
-                    neighbours[track.filename].append((score_for, other))
-                    neighbours[other.filename].append((score_from, track))
+                    neighbours[track.filename].append(other)
+                    neighbours[other.filename].append(track)
 
         return neighbours

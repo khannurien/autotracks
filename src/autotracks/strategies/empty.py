@@ -25,12 +25,3 @@ class Empty(Strategy):
         """
 
         return Playlist([])
-
-    def score_playlist(self, playlist: Playlist) -> float:
-        """
-        TODO
-
-        Returns:
-            {float} -- TODO
-        """
-        return 0.0

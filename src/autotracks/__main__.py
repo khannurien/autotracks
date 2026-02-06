@@ -12,6 +12,8 @@ from dotenv import dotenv_values
 from src.autotracks.autotracks import Autotracks
 from src.autotracks.error import Error, NotEnoughTracksError
 from src.autotracks.playlist import Playlist
+from src.autotracks.scorer import Scorer
+from src.autotracks.scorers.bybpm import ByBPM
 from src.autotracks.strategy import Strategy
 from src.autotracks.strategies.dfs import DFS
 from src.autotracks.track import Track
@@ -69,9 +71,13 @@ def main() -> int:
     autotracks = Autotracks(config, args.filenames)
 
     try:
+        # select scorer
+        # TODO: move to program argument
+        scorer: Scorer = ByBPM()
+
         # select strategy
         # TODO: move to program argument
-        strategy: Strategy = DFS()
+        strategy: Strategy = DFS(scorer)
 
         # generate playlists and measure elapsed time
         start: float = time.perf_counter()
@@ -84,7 +90,7 @@ def main() -> int:
         selected: Playlist = autotracks.select_playlist(strategy, playlists)
 
         # display playlist score
-        playlist_score: float = autotracks.score_playlist(strategy, selected)
+        playlist_score: float = autotracks.score_playlist(scorer, selected)
         logging.info(f"Playlist score: {playlist_score}")
 
         # write selected playlist to file

@@ -6,6 +6,8 @@ from typing import Dict, List, Set, Tuple
 from src.autotracks.autotracks import Autotracks
 from src.autotracks.error import Error
 from src.autotracks.playlist import Playlist
+from src.autotracks.scorer import Scorer
+from src.autotracks.scorers.bybpm import ByBPM
 from src.autotracks.strategy import Strategy
 from src.autotracks.strategies.dfs import DFS
 from src.autotracks.track import Track
@@ -17,8 +19,13 @@ def autotracks(config: Dict[str, str | None], shared_datadir: str) -> Autotracks
 
 
 @pytest.fixture
-def strategy() -> Strategy:
-    return DFS()
+def scorer() -> Scorer:
+    return ByBPM()
+
+
+@pytest.fixture
+def strategy(scorer: Scorer) -> Strategy:
+    return DFS(scorer)
 
 
 @pytest.fixture
@@ -38,8 +45,8 @@ def errors(autotracks: Autotracks) -> Set[Tuple[str, Error]]:
 
 
 @pytest.fixture
-def score(autotracks: Autotracks, strategy: Strategy, selected: Playlist) -> float:
-    return autotracks.score_playlist(strategy, selected)
+def score(autotracks: Autotracks, scorer: Scorer, selected: Playlist) -> float:
+    return autotracks.score_playlist(scorer, selected)
 
 
 def test_playlist_length(selected: Playlist):
