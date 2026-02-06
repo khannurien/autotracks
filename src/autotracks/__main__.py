@@ -66,44 +66,45 @@ def main() -> int:
     }
 
     # initialize library
+    autotracks = Autotracks(config, args.filenames)
+
     try:
-        autotracks = Autotracks(config, args.filenames)
+        # select strategy
+        # TODO: move to program argument
+        strategy: Strategy = DFS()
+
+        # generate playlists and measure elapsed time
+        start: float = time.perf_counter()
+        playlists = autotracks.generate_playlists(strategy)
+        end: float = time.perf_counter()
+        elapsed = end - start
+        logging.info(f"Elapsed time (seconds): {elapsed}")
+
+        # select playlist
+        selected: Playlist = autotracks.select_playlist(strategy, playlists)
+
+        # display playlist score
+        playlist_score: float = autotracks.score_playlist(strategy, selected)
+        logging.info(f"Playlist score: {playlist_score}")
+
+        # write selected playlist to file
+        autotracks.write_playlist(selected, args.playlist_name)
+
+        # show library tracks that remain unused in the selected playlist
+        unused: Set[Track] = autotracks.get_unused_tracks(selected)
+        for track in unused:
+            logging.warning(
+                f"⚠ Unused track: {track.filename} ({track.metadata.key} @ {round(track.metadata.bpm)})"
+            )
     except NotEnoughTracksError as error:
+        # can't work with that
         logging.error(error.message)
-        sys.exit(os.EX_DATAERR)
-
-    # select strategy
-    # TODO: move to program argument
-    strategy: Strategy = DFS()
-
-    # generate playlists and measure elapsed time
-    start: float = time.perf_counter()
-    playlists = autotracks.generate_playlists(strategy)
-    end: float = time.perf_counter()
-    elapsed = end - start
-    logging.info(f"Elapsed time (seconds): {elapsed}")
-
-    # select playlist
-    selected: Playlist = autotracks.select_playlist(strategy, playlists)
-
-    # display playlist score
-    playlist_score: float = autotracks.score_playlist(strategy, selected)
-    logging.info(f"Playlist score: {playlist_score}")
-
-    # write selected playlist to file
-    autotracks.write_playlist(selected, args.playlist_name)
-
-    # show library tracks that remain unused in the selected playlist
-    unused: Set[Track] = autotracks.get_unused_tracks(selected)
-    for track in unused:
-        logging.warning(
-            f"⚠ Unused track: {track.filename} ({track.key} @ {round(track.bpm)})"
-        )
-
-    # show files that produced errors during analysis
-    errors: Set[Tuple[str, Error]] = autotracks.get_errors()
-    for filename, error in errors:
-        logging.error(f"✘ Error with file: {filename} ({error.message})")
+        return os.EX_DATAERR
+    finally:
+        # show files that produced errors during analysis
+        errors: Set[Tuple[str, Error]] = autotracks.get_errors()
+        for filename, error in errors:
+            logging.error(f"✘ Error with file: {filename} ({error.message})")
 
     return os.EX_OK
 

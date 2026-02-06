@@ -1,9 +1,10 @@
 import os
 import pytest
 
-from typing import Dict, List, Set
+from typing import Dict, List, Set, Tuple
 
 from src.autotracks.autotracks import Autotracks
+from src.autotracks.error import Error
 from src.autotracks.playlist import Playlist
 from src.autotracks.strategy import Strategy
 from src.autotracks.strategies.dfs import DFS
@@ -32,6 +33,11 @@ def unused(autotracks: Autotracks, selected: Playlist) -> Set[Track]:
 
 
 @pytest.fixture
+def errors(autotracks: Autotracks) -> Set[Tuple[str, Error]]:
+    return autotracks.get_errors()
+
+
+@pytest.fixture
 def score(autotracks: Autotracks, strategy: Strategy, selected: Playlist) -> float:
     return autotracks.score_playlist(strategy, selected)
 
@@ -52,6 +58,15 @@ def test_playlist_unused(unused: Set[Track]):
 
     assert len(filenames) == 1
     assert "4.flac" in filenames
+
+
+def test_playlist_errors(errors: Set[Tuple[str, Error]]):
+    filenames: List[str] = [os.path.basename(error[0]) for error in errors]
+
+    assert len(filenames) == 3
+    assert "6.wav" in filenames
+    assert "7.wav" in filenames
+    assert "8.mp3" in filenames
 
 
 def test_playlist_score(score: float):

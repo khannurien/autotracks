@@ -4,8 +4,9 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-dotenv = "*"
+python-dotenv = "*"
 python-magic = "*"
+mixmatch = {editable = true, git = "https://github.com/Wcarpenter96/mixmatch.git"}
 
 [dev-packages]
 ruff = "*"
@@ -13,4 +14,4 @@ pytest = "*"
 pytest-datadir = "*"
 
 [requires]
-python_version = "3.12"
+python_version = "3.11"

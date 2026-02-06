@@ -27,15 +27,7 @@ class Autotracks:
             else:
                 track_filenames.append(item)
 
-        if not track_filenames:
-            raise NotEnoughTracksError("No tracks found in list.")
-
         self.library = Library(config, track_filenames)
-
-        if len(self.library.tracks) < 2:
-            raise NotEnoughTracksError(
-                f"Less than two tracks could be added to the library from path: {from_path}"
-            )
 
     def generate_playlists(self, strategy: Strategy) -> List[Playlist]:
         """
@@ -47,6 +39,11 @@ class Autotracks:
         Returns:
             List[Playlist] -- A list of valid playlists for the library according to the strategy's criteria.
         """
+
+        if len(self.library.tracks) < 2:
+            raise NotEnoughTracksError(
+                f"Less than two tracks could be added to the library."
+            )
 
         return strategy.generate_playlists(self.library)
 
@@ -88,7 +85,10 @@ class Autotracks:
         try:
             with open(playlist_filename, mode="w") as playlist_file:
                 for track in playlist.tracks:
-                    print(f"# {track.key} @ {round(track.bpm)}", file=playlist_file)
+                    print(
+                        f"# {track.metadata.key} @ {round(track.metadata.bpm)}",
+                        file=playlist_file,
+                    )
                     print(f"{track.filename}", file=playlist_file)
         except OSError:
             logging.error(f"Could not open playlist file: {playlist_filename}")

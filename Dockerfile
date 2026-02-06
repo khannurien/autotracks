@@ -1,4 +1,4 @@
-FROM python:3.12-slim as base
+FROM python:3.12-slim AS base
 
 RUN apt-get update && \
  apt-get install -y \
@@ -13,6 +13,7 @@ RUN apt-get update && \
  libavformat-dev \
  libavutil-dev \
  libfftw3-dev \
+ pkg-config \
  sox
 
 RUN mkdir /build
@@ -27,8 +28,9 @@ RUN git clone https://github.com/mixxxdj/libkeyfinder.git && \
 
 RUN git clone https://github.com/EvanPurkhiser/keyfinder-cli.git && \
  cd keyfinder-cli && \
- make && \
- make install && \
+ cmake -DCMAKE_INSTALL_PREFIX=/usr/local -S . -B build && \
+ cmake --build build && \
+ cmake --install build && \
  cd ..
 
 RUN git clone https://www.pogo.org.uk/~mark/bpm-tools.git && \
@@ -37,7 +39,7 @@ RUN git clone https://www.pogo.org.uk/~mark/bpm-tools.git && \
  make install && \
  cd ..
 
-RUN python3 -m pip install dotenv filetype pytest pytest-datadir python-magic ruff
+RUN python3 -m pip install python-dotenv python-magic pytest pytest-datadir ruff
 
 COPY ./src /app/src
 
