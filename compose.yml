@@ -1,0 +1,12 @@
+services:
+  autotracks:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        USER_UID: ${UID:-1000}
+        USER_GID: ${GID:-1000}
+    volumes:
+      - ./tracks:/tracks
+      - ./output:/output
+    user: "${USER_UID:-1000}:${USER_GID:-1000}"

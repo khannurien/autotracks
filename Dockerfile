@@ -1,141 +1,94 @@
-FROM python:3.12-slim AS base
+FROM python:3.11-slim AS builder
 
 RUN apt-get update && \
- apt-get install -y \
- build-essential \
- cmake \
- ffmpeg \
- flac \
- id3v2 \
- vorbis-tools \
- git \
- libavcodec-dev \
- libavformat-dev \
- libavutil-dev \
- libfftw3-dev \
- pkg-config \
- sox
+    apt-get install -y --no-install-recommends \
+    build-essential \
+    cmake \
+    git \
+    libavcodec-dev \
+    libavformat-dev \
+    libavutil-dev \
+    libfftw3-dev \
+    pkg-config \
+    ca-certificates
 
-RUN mkdir /build
+RUN pip install --no-cache-dir uv
+
 WORKDIR /build
 
 RUN git clone https://github.com/mixxxdj/libkeyfinder.git && \
- cd libkeyfinder && \
- cmake -DCMAKE_INSTALL_PREFIX=/usr/local -S . -B build && \
- cmake --build build --parallel 4 && \
- cmake --install build && \
- cd ..
+    cd libkeyfinder && \
+    cmake -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=/usr/local -S . -B build && \
+    cmake --build build --parallel $(nproc) && \
+    cmake --install build && \
+    cd .. && \
+    rm -rf libkeyfinder
 
 RUN git clone https://github.com/EvanPurkhiser/keyfinder-cli.git && \
- cd keyfinder-cli && \
- cmake -DCMAKE_INSTALL_PREFIX=/usr/local -S . -B build && \
- cmake --build build && \
- cmake --install build && \
- cd ..
+    cd keyfinder-cli && \
+    cmake -DCMAKE_INSTALL_PREFIX=/usr/local -S . -B build && \
+    cmake --build build --parallel $(nproc) && \
+    cmake --install build && \
+    cd .. && \
+    rm -rf keyfinder-cli
 
 RUN git clone https://www.pogo.org.uk/~mark/bpm-tools.git && \
- cd bpm-tools && \
- make && \
- make install && \
- cd ..
+    cd bpm-tools && \
+    make && \
+    make install && \
+    cd .. && \
+    rm -rf bpm-tools
 
-RUN python3 -m pip install python-dotenv python-magic pytest pytest-datadir ruff
-
-COPY ./src /app/src
+COPY pyproject.toml uv.lock /app/
 
 WORKDIR /app
 
-VOLUME ["/tracks"]
-VOLUME ["/output"]
+RUN uv sync --frozen --no-dev
+RUN uv export --frozen --format requirements-txt > requirements.txt
 
-ENV LANG=C.UTF-8
-ENV LC_ALL=C.UTF-8
-ENV LD_LIBRARY_PATH="/usr/local/lib"
+FROM python:3.11-slim AS runtime
 
-ENTRYPOINT ["python3", "-m", "src.autotracks", "/output/playlist.m3u", "/tracks"]
+ARG UID=1000
+ARG GID=1000
 
-# FROM python:3.12-slim as base
+ENV LANG=C.UTF-8 \
+    LC_ALL=C.UTF-8 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONFAULTHANDLER=1 \
+    PYTHONUNBUFFERED=1 \
+    PATH="/app/.venv/bin:$PATH"
 
-# # Setup env
-# ENV LANG=C.UTF-8
-# ENV LC_ALL=C.UTF-8
-# ENV PYTHONDONTWRITEBYTECODE=1
-# ENV PYTHONFAULTHANDLER=1
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    ffmpeg \
+    flac \
+    id3v2 \
+    sox \
+    vorbis-tools \
+    libmagic1 \
+    libfftw3-bin \
+    libavcodec61 \
+    libavformat61 \
+    libavutil59 && \
+    rm -rf /var/lib/apt/lists/*
 
-# FROM base AS builder
+RUN groupadd --gid ${GID} app && \
+    useradd --create-home --shell /bin/bash --uid ${UID} --gid ${GID} app && \
+    mkdir -p /app /tracks /output /app/log && \
+    chown -R app:app /app /tracks /output
 
-# # Install build dependencies
-# RUN apt-get update && \
-#  apt-get install -y \
-#  build-essential \
-#  cmake \
-#  git \
-#  libavcodec-dev \
-#  libavformat-dev \
-#  libavutil-dev \
-#  libfftw3-dev
+COPY --from=builder /usr/local/bin/keyfinder-cli /usr/local/bin/keyfinder-cli
+COPY --from=builder /usr/local/bin/bpm /usr/local/bin/bpm
+COPY --from=builder /usr/local/bin/bpm-tag /usr/local/bin/bpm-tag
 
-# # Install pipenv
-# RUN pip install pipenv
+COPY --chown=app:app --from=builder /app/requirements.txt /app/
+COPY --chown=app:app src /app/src
 
-# # Install python dependencies in /.venv
-# COPY Pipfile .
-# COPY Pipfile.lock .
-# RUN PIPENV_VENV_IN_PROJECT=1 pipenv install --deploy
+RUN pip install -r /app/requirements.txt
 
-# # Build dependencies
-# RUN git clone https://github.com/mixxxdj/libkeyfinder.git && \
-#  cd libkeyfinder && \
-#  cmake -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=/usr/local -S . -B build && \
-#  cmake --build build --parallel 4 && \
-#  cmake --install build && \
-#  cd ..
+USER app
+WORKDIR /app
 
-# RUN git clone https://github.com/EvanPurkhiser/keyfinder-cli.git && \
-#  cd keyfinder-cli && \
-#  make && \
-#  make install && \
-#  cd ..
+VOLUME ["/tracks", "/output"]
 
-# RUN git clone https://www.pogo.org.uk/~mark/bpm-tools.git && \
-#  cd bpm-tools && \
-#  make && \
-#  make install && \
-#  cd ..
-
-# FROM base AS runner
-
-# # Install runtime dependencies
-# RUN apt-get update && \
-#  apt-get install -y \
-#  ffmpeg \
-#  flac \
-#  id3v2 \
-#  sox \
-#  vorbis-tools
-
-# # Create new user
-# RUN useradd --create-home app
-
-# # Copy virtual env from builder stage
-# COPY --from=builder --chown=app:app /.venv /.venv
-# ENV PATH="/.venv/bin:$PATH"
-
-# # Switch to new user
-# USER app
-# WORKDIR /home/app
-
-# # Persistent volumes for output files
-# RUN mkdir /tracks
-# RUN mkdir /output
-# VOLUME ["/tracks"]
-# VOLUME ["/output"]
-
-# # Copy dependencies from builder stage
-# COPY --from=builder /usr/local/lib/libkeyfinder
-
-# # Install application into container
-# COPY --chown=app:app ./src /app/src
-
-# # Run autotracks
-# ENTRYPOINT ["python3", "-m", "src.autotracks", "/output/playlist", "/tracks"]
+ENTRYPOINT ["python", "-m", "src.autotracks", "/output/playlist.m3u", "/tracks"]

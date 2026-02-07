@@ -4,15 +4,9 @@ import os
 import subprocess
 
 from concurrent.futures import Future, ThreadPoolExecutor, as_completed
-from typing import Callable, Dict, List, Tuple, TYPE_CHECKING, TypedDict, Union
+from typing import Callable, Dict, List, Tuple, TypedDict, Union
 
 import magic
-
-# from mixmatch import extract  # type: ignore
-if TYPE_CHECKING:
-
-    def extract(audio_path: str) -> MixmatchTrackData: ...
-
 
 from src.autotracks.error import Error, AudioAnalysisError, MalformedMetaFileError
 from src.autotracks.key import KeyNotation, is_valid_key_notation, lookup_key
@@ -24,20 +18,7 @@ class OldSkoolTrackData(TypedDict):
     key: KeyNotation
 
 
-class MixmatchSectionData(TypedDict):
-    label: str
-    start: float
-    key: KeyNotation
-    lyrics: str | None
-
-
-class MixmatchTrackData(TypedDict):
-    bpm: int
-    key: KeyNotation
-    sections: List[MixmatchSectionData]
-
-
-TrackData = Union[OldSkoolTrackData, MixmatchTrackData]
+TrackData = Union[OldSkoolTrackData]
 
 
 class Library:
@@ -285,32 +266,35 @@ class Library:
             OldSkoolTrackData -- Dictionary containing BPM (float) and key (KeyNotation).
         """
         try:
-            bpm: float = float(
-                subprocess.check_output(
-                    f"{self.config['BPM_TAG']}"
-                    f' -nf "{filename}" 2>&1 /dev/null'
-                    " | grep \"BPM\" | tail -n 1 | awk -F \": \" '{print $NF}' | cut -d ' ' -f 1",
-                    shell=True,
-                    text=True,
-                ).strip()
-            )
-            print(bpm)
-
-            key_str: str = subprocess.check_output(
-                f'{self.config["KEYFINDER_CLI"]} -n openkey "{filename}"',
-                shell=True,
+            # bpm-tag writes BPM to stderr
+            bpm_output: str = subprocess.check_output(
+                [str(self.config["BPM_TAG"]), "-nf", filename],
+                stderr=subprocess.STDOUT,
                 text=True,
             ).strip()
-            print(key_str)
 
-            if not is_valid_key_notation(key_str):
-                raise ValueError(f"Unknown key notation: {key_str}")
+            # parse bpm-tag output
+            bpm_lines = [line for line in bpm_output.splitlines() if "BPM" in line]
+            if not bpm_lines:
+                raise ValueError(f"No BPM found in output: {bpm_output}")
+            last_bpm_line = bpm_lines[-1]
+            bpm_str = last_bpm_line.split(": ")[1].split()[0]
+            bpm = float(bpm_str)
+
+            key: str = subprocess.check_output(
+                [str(self.config["KEYFINDER_CLI"]), "-n", "openkey", filename],
+                stderr=subprocess.DEVNULL,
+                text=True,
+            ).strip()
+
+            if not is_valid_key_notation(key):
+                raise ValueError(f"Unknown key notation: {key}")
 
             return {
                 "bpm": bpm,
-                "key": key_str,
+                "key": key,
             }
-        except ValueError as error:
+        except (IndexError, ValueError, subprocess.CalledProcessError) as error:
             raise AudioAnalysisError(
                 f"Audio analysis error for file: {filename} ({error})"
             )

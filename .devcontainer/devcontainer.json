@@ -1,0 +1,20 @@
+{
+	"name": "Development container",
+	"build": {
+		"context": "../",
+		"dockerfile": "./Dockerfile"
+	},
+	"remoteUser": "app",
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"ms-python.python"
+			]
+		}
+	},
+	"mounts": [
+		"source=./tracks,target=/tracks,type=bind,consistency=cached",
+		"source=./output,target=/output,type=bind,consistency=cached"
+	],
+	"postCreateCommand": "uv sync"
+}

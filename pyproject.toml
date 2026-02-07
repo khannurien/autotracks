@@ -1,0 +1,23 @@
+[project]
+name = "Autotracks"
+version = "0.0.1"
+requires-python = "~=3.11.0"
+dependencies = [
+    "python-dotenv",
+    "python-magic",
+    "tqdm",
+]
+
+[dependency-groups]
+dev = [
+    "ruff",
+    "pytest",
+    "pytest-datadir",
+]
+
+[tool.uv]
+package = false
+
+[[tool.uv.index]]
+name = "pypi"
+url = "https://pypi.org/simple"

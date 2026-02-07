@@ -3,6 +3,8 @@ import math
 
 from typing import Dict, List, Optional, Set, Tuple
 
+from tqdm import tqdm
+
 from src.autotracks.library import Library
 from src.autotracks.playlist import Playlist
 from src.autotracks.strategy import Strategy
@@ -24,24 +26,40 @@ class DFS(Strategy):
 
         playlists: List[Playlist] = []
 
-        for first_filename, first_track in library.tracks.items():
-            logging.debug("⚙ Building and comparing playlists...")
-            logging.debug(f"  › Starting with: {first_filename}")
+        tracks = list(library.tracks.items())
+        total_combinations = len(tracks) * (len(tracks) - 1)
+        total_neighbours = sum(len(n) for n in library.neighbours.values())
 
-            all_last_tracks = [
-                (filename, track)
-                for (filename, track) in library.tracks.items()
-                if filename != first_filename
-            ]
-            for last_filename, last_track in all_last_tracks:
-                logging.debug(f"    › Ending with: {last_filename}")
+        logging.info(f"Total tracks: {len(library.tracks)}")
+        logging.info(f"Total combinations: {total_combinations}")
+        logging.info(f"Total neighbour relationships: {total_neighbours}")
+        logging.info(
+            f"Average neighbours per track: {total_neighbours / len(library.tracks):.1f}"
+        )
 
-                playlist = self._create_playlist(library, first_track, last_track)
-                if not playlist.is_empty():
-                    playlists.append(playlist)
-                    logging.debug(f"      » {len(playlist.tracks)} tracks.")
-                else:
-                    logging.debug("      » No possible playlist in this case.")
+        with tqdm(
+            total=total_combinations, desc="Generating playlists", unit="path"
+        ) as pbar:
+            for first_filename, first_track in library.tracks.items():
+                logging.debug("⚙ Building and comparing playlists...")
+                logging.debug(f"  › Starting with: {first_filename}")
+
+                all_last_tracks = [
+                    (filename, track)
+                    for (filename, track) in library.tracks.items()
+                    if filename != first_filename
+                ]
+                for last_filename, last_track in all_last_tracks:
+                    logging.debug(f"    › Ending with: {last_filename}")
+
+                    playlist = self._create_playlist(library, first_track, last_track)
+                    if not playlist.is_empty():
+                        playlists.append(playlist)
+                        logging.debug(f"      » {len(playlist.tracks)} tracks.")
+                    else:
+                        logging.debug("      » No possible playlist in this case.")
+
+                    pbar.update(1)
 
         return playlists
 
@@ -98,8 +116,7 @@ class DFS(Strategy):
         Arguments:
             library {Library} -- The library containing all tracks and their neighbourhoods.
             first {Track} -- The starting track from which to build the graph.
-            visited {Optional[Set[str]]} -- Set of track filenames already visited to
-            prevent cycles. Can be None for initial calls.
+            visited {Optional[Set[str]]} -- Set of track filenames already visited to prevent cycles. Can be None for initial calls.
 
         Returns:
             {Dict} -- A dictionary representing the graph, where each key is a track filename
@@ -107,15 +124,21 @@ class DFS(Strategy):
             next tracks in playlists.
         """
 
+        if visited is None:
+            visited = set()
+
+        if first.filename in visited:
+            return {}
+
+        # include current track in the visited set
+        visited.add(first.filename)
+
         graph: Dict[str, List[Tuple[float, Track]]] = {}
         graph[first.filename] = self._find_successors(library, first)
 
-        # include current track in the visited set
-        history = (visited or set()) | {first.filename}
-
         for _, next_track in graph[first.filename]:
-            if next_track.filename not in history:
-                subgraph = self._discover_graph(library, next_track, history)
+            if next_track.filename not in visited:
+                subgraph = self._discover_graph(library, next_track, visited)
                 graph.update(subgraph)
 
         return graph

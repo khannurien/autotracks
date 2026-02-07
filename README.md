@@ -35,7 +35,10 @@ A very naive Dockerfile is provided within the repository. It will produce a who
 ```sh
 git clone https://github.com/khannurien/autotracks.git
 cd autotracks
-sudo docker build -t autotracks .
+docker build \
+  --build-arg UID=$(id -u) \
+  --build-arg GID=$(id -g) \
+  -t autotracks .
 ```
 
 2. Run the image:
@@ -55,18 +58,18 @@ If Autotracks runs successfully, this will:
 Environment variables can be used to set custom paths to `keyfinder-cli` and `bpm-tag` if necessary.
 Copy `example.env` to `.env` and edit it to reflect your system's configuration, or set and export the variables from your shell before launching Autotracks.
 
-Use `pipenv` to enter a correct virtual environment (read `Pipfile` for Python dependencies):
+You can use `uv` to initialize a correct virtual environment (read `pyproject.toml` for Python dependencies):
 
 ```sh
 git clone https://github.com/khannurien/autotracks.git
 cd autotracks
-pipenv install
+uv sync
 ```
 
 Call Autotracks with a playlist name and a directory or a list of files:
 
 ```sh
-pipenv run python3 -m src.autotracks "my_playlist.m3u" tracks/
+uv run python -m src.autotracks "my_playlist.m3u" tracks/
 ```
 
 This will create a `my_playlist.m3u` file in the current directory.
@@ -80,6 +83,6 @@ Note: Autotracks creates a `.meta` file alongside each track of the list. These 
 Run tests:
 
 ```sh
-pipenv install --dev
-pipenv run python3 -m pytest
+uv sync
+uv run python -m pytest
 ```
