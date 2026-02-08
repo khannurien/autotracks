@@ -4,10 +4,7 @@ import os
 import sys
 import time
 
-from datetime import datetime
-from typing import Dict, Set, Tuple
-
-from dotenv import dotenv_values
+from typing import Set, Tuple
 
 from src.autotracks.autotracks import Autotracks
 from src.autotracks.error import Error, NotEnoughTracksError
@@ -17,6 +14,8 @@ from src.autotracks.scorers.bybpm import ByBPM
 from src.autotracks.strategy import Strategy
 from src.autotracks.strategies.dfs import DFS
 from src.autotracks.track import Track
+
+from src.autotracks.config import config
 
 
 def main() -> int:
@@ -37,35 +36,6 @@ def main() -> int:
     )
 
     args = parser.parse_args()
-
-    # initialize logger
-    if not os.path.exists("log"):
-        os.makedirs("log")
-
-    run_time = datetime.now().strftime("%Y%m%d-%H%M%S-%f")
-
-    file_handler = logging.FileHandler(f"log/{run_time}.log")
-    file_handler.setLevel(logging.DEBUG)
-    console_handler = logging.StreamHandler(sys.stdout)
-    console_handler.setLevel(logging.INFO)
-
-    logging.basicConfig(
-        level=logging.DEBUG,
-        format="%(levelname)7s [%(funcName)18s] %(message)s",
-        handlers=[file_handler, console_handler],
-    )
-
-    # load environment variables
-    # environment variables > .env file > default values
-    default_values = {
-        "BPM_TAG": "bpm-tag",
-        "KEYFINDER_CLI": "keyfinder-cli",
-    }
-    config: Dict[str, str | None] = {
-        **default_values,
-        **dotenv_values(".env"),
-        **{k: os.environ[k] for k in default_values if k in os.environ},
-    }
 
     # initialize library
     autotracks = Autotracks(config, args.filenames)

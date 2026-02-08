@@ -1,8 +1,9 @@
 import logging
 import os
 
-from typing import Dict, List, Set, Tuple
+from typing import List, Set, Tuple
 
+from src.autotracks.config import AutotracksConfig
 from src.autotracks.error import Error, NotEnoughTracksError
 from src.autotracks.library import Library
 from src.autotracks.playlist import Playlist
@@ -14,7 +15,7 @@ from src.autotracks.track import Track
 class Autotracks:
     library: Library
 
-    def __init__(self, config: Dict[str, str | None], from_path: List[str]):
+    def __init__(self, config: AutotracksConfig, from_path: List[str]):
         # recursively try to add all files from the given path to the library
         track_filenames: List[str] = []
         for item in from_path:

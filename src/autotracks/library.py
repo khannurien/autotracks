@@ -8,6 +8,7 @@ from typing import Callable, Dict, List, Tuple, TypedDict, Union
 
 import magic
 
+from src.autotracks.autotracks import AutotracksConfig
 from src.autotracks.error import Error, AudioAnalysisError, MalformedMetaFileError
 from src.autotracks.key import KeyNotation, is_valid_key_notation, lookup_key
 from src.autotracks.track import Track, TrackMetadata
@@ -35,14 +36,12 @@ class Library:
         neighbours {Dict[str, List[Track]]} -- Compatible tracks for each track.
     """
 
-    config: Dict[str, str | None]
+    config: AutotracksConfig
     tracks: Dict[str, Track]
     errors: Dict[str, Error]
     neighbours: Dict[str, List[Track]]
 
-    def __init__(
-        self, config: Dict[str, str | None], track_filenames: List[str]
-    ) -> None:
+    def __init__(self, config: AutotracksConfig, track_filenames: List[str]) -> None:
         self.config = config
         self.tracks, self.errors = self.load_metadata(track_filenames)
         self.neighbours = self.find_neighbours(self.tracks)
@@ -268,7 +267,7 @@ class Library:
         try:
             # bpm-tag writes BPM to stderr
             bpm_output: str = subprocess.check_output(
-                [str(self.config["BPM_TAG"]), "-nf", filename],
+                [self.config.bpm_tag, "-nf", filename],
                 stderr=subprocess.STDOUT,
                 text=True,
             ).strip()
@@ -282,7 +281,7 @@ class Library:
             bpm = float(bpm_str)
 
             key: str = subprocess.check_output(
-                [str(self.config["KEYFINDER_CLI"]), "-n", "openkey", filename],
+                [self.config.keyfinder_cli, "-n", "openkey", filename],
                 stderr=subprocess.DEVNULL,
                 text=True,
             ).strip()
@@ -315,7 +314,9 @@ class Library:
         try:
             track_data = future.result()
             metadata_filename = self.metadata_filename(audio_filename)
-            metadata = TrackMetadata(track_data["bpm"], lookup_key(track_data["key"]))
+            metadata = TrackMetadata(
+                bpm=track_data["bpm"], key=lookup_key(track_data["key"])
+            )
             return Track(audio_filename, metadata_filename, metadata)
         except AudioAnalysisError as error:
             return error
@@ -389,7 +390,7 @@ class Library:
                 key_str: str = lines[1]
                 key = lookup_key(key_str)
 
-                return TrackMetadata(bpm, key)
+                return TrackMetadata(bpm=bpm, key=key)
             except IndexError:
                 raise MalformedMetaFileError(
                     f"Lines in metadata file: {len(lines)} (expected 2)",
