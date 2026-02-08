@@ -8,6 +8,8 @@ from typing import Callable, Dict, List, Tuple, TypedDict, Union
 
 import magic
 
+from tqdm import tqdm
+
 from src.autotracks.autotracks import AutotracksConfig
 from src.autotracks.error import Error, AudioAnalysisError, MalformedMetaFileError
 from src.autotracks.key import KeyNotation, is_valid_key_notation, lookup_key
@@ -149,24 +151,24 @@ class Library:
         # partition audio files by cached metadata availability
         cached, fresh = self._partition_by_cache(audio_filenames)
 
-        # analyse fresh files in parallel
+        # analyse fresh audio files in parallel
         analysed_tracks, analysed_errors = self._analyse_audio(
             fresh, self._analyse_oldskool
         )
         tracks.update(analysed_tracks)
         errors.update(analysed_errors)
 
-        # load cached metadata files (convert audio filenames to .meta filenames)
+        # load cached metadata files (audio files with associated metadata files)
         cached_meta = [self.metadata_filename(f) for f in cached]
         cached_tracks, cached_errors = self._load_cached(cached_meta)
         tracks.update(cached_tracks)
         errors.update(cached_errors)
 
-        # load orphan .meta files (passed directly, without corresponding audio file)
-        orphan_meta = self._find_orphan_meta_files(meta_filenames, audio_filenames)
-        orphan_tracks, orphan_errors = self._load_cached(orphan_meta)
-        tracks.update(orphan_tracks)
-        errors.update(orphan_errors)
+        # load orphaned metadata files (passed without corresponding audio file)
+        orphaned_meta = self._find_orphan_meta_files(meta_filenames, audio_filenames)
+        orphaned_tracks, orphaned_errors = self._load_cached(orphaned_meta)
+        tracks.update(orphaned_tracks)
+        errors.update(orphaned_errors)
 
         return tracks, errors
 
@@ -242,15 +244,20 @@ class Library:
                 for filename in audio_filenames
             }
 
-            for future in as_completed(futures):
-                audio_filename = futures[future]
-                result = self._handle_analysis_result(future, audio_filename)
+            with tqdm(
+                total=len(audio_filenames), desc="Analysing audio files", unit="file"
+            ) as pbar:
+                for future in as_completed(futures):
+                    audio_filename = futures[future]
+                    result = self._handle_analysis_result(future, audio_filename)
 
-                if isinstance(result, Track):
-                    tracks[audio_filename] = result
-                    self.write_metadata(result)
-                else:
-                    errors[audio_filename] = result
+                    if isinstance(result, Track):
+                        tracks[audio_filename] = result
+                        self.write_metadata(result)
+                    else:
+                        errors[audio_filename] = result
+
+                    pbar.update(1)
 
         return tracks, errors
 
